@@ -43,7 +43,7 @@ curl -fsSL "${BIN_URL}" -o "${TMP_DIR}/${ASSET}"
 
 if curl -fsSL "${CHECKSUMS_URL}" -o "${TMP_DIR}/checksums.txt"; then
   if command -v shasum >/dev/null 2>&1 || command -v sha256sum >/dev/null 2>&1; then
-    EXPECTED="$(grep " ${ASSET}$" "${TMP_DIR}/checksums.txt" | awk '{print $1}')"
+    EXPECTED="$(grep -E "[ *]${ASSET}$" "${TMP_DIR}/checksums.txt" | awk '{print $1}')"
     if [ -n "${EXPECTED}" ]; then
       if command -v shasum >/dev/null 2>&1; then
         ACTUAL="$(shasum -a 256 "${TMP_DIR}/${ASSET}" | awk '{print $1}')"
@@ -54,8 +54,15 @@ if curl -fsSL "${CHECKSUMS_URL}" -o "${TMP_DIR}/checksums.txt"; then
         echo "Checksum verification failed."
         exit 1
       fi
+      echo "Checksum verified."
+    else
+      echo "Warning: Asset not found in checksums.txt. Skipping verification."
     fi
+  else
+    echo "Warning: No checksum tool (shasum/sha256sum) available. Skipping verification."
   fi
+else
+  echo "Warning: Could not download checksums.txt. Skipping verification."
 fi
 
 if ! mkdir -p "${INSTALL_DIR}" 2>/dev/null; then
