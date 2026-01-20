@@ -135,11 +135,13 @@ type reviewQuery struct {
 
 type appsQuery struct {
 	listQuery
+	sort string
 }
 
 type buildsQuery struct {
 	listQuery
 	appID string
+	sort string
 }
 
 // AppAttributes describes an app resource.
@@ -391,6 +393,15 @@ func WithAppsNextURL(next string) AppsOption {
 	}
 }
 
+// WithAppsSort sets the sort order for apps.
+func WithAppsSort(sort string) AppsOption {
+	return func(q *appsQuery) {
+		if strings.TrimSpace(sort) != "" {
+			q.sort = strings.TrimSpace(sort)
+		}
+	}
+}
+
 // WithBuildsLimit sets the max number of builds to return.
 func WithBuildsLimit(limit int) BuildsOption {
 	return func(q *buildsQuery) {
@@ -412,6 +423,15 @@ func WithBuildsNextURL(next string) BuildsOption {
 	return func(q *buildsQuery) {
 		if strings.TrimSpace(next) != "" {
 			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithBuildsSort sets the sort order for builds.
+func WithBuildsSort(sort string) BuildsOption {
+	return func(q *buildsQuery) {
+		if strings.TrimSpace(sort) != "" {
+			q.sort = strings.TrimSpace(sort)
 		}
 	}
 }
@@ -695,8 +715,17 @@ func (c *Client) GetApps(ctx context.Context, opts ...AppsOption) (*AppsResponse
 	path := "/v1/apps"
 	if query.nextURL != "" {
 		path = query.nextURL
-	} else if query.limit > 0 {
-		path += "?limit=" + strconv.Itoa(query.limit)
+	} else {
+		values := url.Values{}
+		if query.sort != "" {
+			values.Set("sort", query.sort)
+		}
+		if query.limit > 0 {
+			values.Set("limit", strconv.Itoa(query.limit))
+		}
+		if queryString := values.Encode(); queryString != "" {
+			path += "?" + queryString
+		}
 	}
 
 	data, err := c.do(ctx, "GET", path, nil)
@@ -724,6 +753,9 @@ func (c *Client) GetBuilds(ctx context.Context, appID string, opts ...BuildsOpti
 		path = query.nextURL
 	} else {
 		values := url.Values{}
+		if query.sort != "" {
+			values.Set("sort", query.sort)
+		}
 		if query.limit > 0 {
 			values.Set("limit", strconv.Itoa(query.limit))
 		}

@@ -303,6 +303,7 @@ func AppsCommand() *ffcli.Command {
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format (shorthand)")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+	sort := fs.String("sort", "", "Sort by uploadedDate or -uploadedDate")
 	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
 	next := fs.String("next", "", "Fetch next page using a links.next URL")
 
@@ -319,6 +320,7 @@ Examples:
   asc apps
   asc apps --json
   asc apps --limit 10 --json
+  asc apps --sort -uploadedDate --json
   asc apps --output table
   asc apps --next "<links.next>" --json`,
 		FlagSet: fs,
@@ -333,6 +335,9 @@ Examples:
 			if err := validateNextURL(*next); err != nil {
 				return err
 			}
+			if err := validateSort(*sort, "uploadedDate", "-uploadedDate"); err != nil {
+				return err
+			}
 
 			client, err := getASCClient()
 			if err != nil {
@@ -345,6 +350,9 @@ Examples:
 			opts := []asc.AppsOption{
 				asc.WithAppsLimit(*limit),
 				asc.WithAppsNextURL(*next),
+			}
+			if strings.TrimSpace(*sort) != "" {
+				opts = append(opts, asc.WithAppsSort(*sort))
 			}
 
 			apps, err := client.GetApps(requestCtx, opts...)
@@ -370,6 +378,7 @@ func BuildsCommand() *ffcli.Command {
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format (shorthand)")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+	sort := fs.String("sort", "", "Sort by uploadedDate or -uploadedDate")
 	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
 	next := fs.String("next", "", "Fetch next page using a links.next URL")
 
@@ -386,6 +395,7 @@ Examples:
   asc builds --app "123456789"
   asc builds --app "123456789" --json
   asc builds --app "123456789" --limit 10 --json
+  asc builds --app "123456789" --sort -uploadedDate --json
   asc builds --app "123456789" --output table
   asc builds --next "<links.next>" --json`,
 		FlagSet: fs,
@@ -398,6 +408,9 @@ Examples:
 				return fmt.Errorf("--limit must be between 1 and 200")
 			}
 			if err := validateNextURL(*next); err != nil {
+				return err
+			}
+			if err := validateSort(*sort, "uploadedDate", "-uploadedDate"); err != nil {
 				return err
 			}
 
@@ -418,6 +431,9 @@ Examples:
 			opts := []asc.BuildsOption{
 				asc.WithBuildsLimit(*limit),
 				asc.WithBuildsNextURL(*next),
+			}
+			if strings.TrimSpace(*sort) != "" {
+				opts = append(opts, asc.WithBuildsSort(*sort))
 			}
 
 			builds, err := client.GetBuilds(requestCtx, resolvedAppID, opts...)
