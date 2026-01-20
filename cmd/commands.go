@@ -303,7 +303,7 @@ func AppsCommand() *ffcli.Command {
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	jsonFlag := fs.Bool("json", false, "Output in JSON format (shorthand)")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
-	sort := fs.String("sort", "", "Sort by uploadedDate or -uploadedDate")
+	sort := fs.String("sort", "", "Sort by bundleId, -bundleId, name, -name, sku, or -sku")
 	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
 	next := fs.String("next", "", "Fetch next page using a links.next URL")
 
@@ -320,7 +320,7 @@ Examples:
   asc apps
   asc apps --json
   asc apps --limit 10 --json
-  asc apps --sort -uploadedDate --json
+  asc apps --sort name --json
   asc apps --output table
   asc apps --next "<links.next>" --json`,
 		FlagSet: fs,
@@ -335,7 +335,7 @@ Examples:
 			if err := validateNextURL(*next); err != nil {
 				return err
 			}
-			if err := validateSort(*sort, "uploadedDate", "-uploadedDate"); err != nil {
+			if err := validateSort(*sort, "bundleId", "-bundleId", "name", "-name", "sku", "-sku"); err != nil {
 				return err
 			}
 
