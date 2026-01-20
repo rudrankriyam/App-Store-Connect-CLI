@@ -1,0 +1,43 @@
+name: PR Checks
+
+on:
+  push:
+    branches-ignore: [main]
+  pull_request:
+    branches: ["*"]
+
+jobs:
+  test-and-build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Run unit tests
+        run: go test -short ./...
+
+      - name: Build for macOS
+        run: |
+          mkdir -p build
+          GOOS=darwin GOARCH=amd64 go build -o build/asc-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o build/asc-darwin-arm64 .
+
+      - name: Build for Linux
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o build/asc-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o build/asc-linux-arm64 .
+
+      - name: Build for Windows
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o build/asc-windows-amd64.exe .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: builds
+          path: build/

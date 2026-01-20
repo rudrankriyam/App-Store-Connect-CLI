@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Create release directory
+        run: mkdir -p release
+
+      - name: Build for macOS
+        run: |
+          GOOS=darwin GOARCH=amd64 go build -o release/asc-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o release/asc-darwin-arm64 .
+
+      - name: Build for Linux
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o release/asc-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o release/asc-linux-arm64 .
+
+      - name: Build for Windows
+        run: |
+          GOOS=windows GOARCH=amd64 go build -o release/asc-windows-amd64.exe .
+
+      - name: Create checksums
+        run: |
+          cd release
+          shasum -a 256 * > checksums.txt
+
+      - name: Display files
+        run: ls -la release/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/**
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
