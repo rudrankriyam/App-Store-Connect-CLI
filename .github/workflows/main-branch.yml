@@ -16,13 +16,20 @@ jobs:
         with:
           go-version: '1.21'
 
+      - name: Set up private key
+        run: |
+          echo "$ASC_PRIVATE_KEY" > /tmp/AuthKey.p8
+          chmod 600 /tmp/AuthKey.p8
+        env:
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+
       - name: Run all tests
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          ASC_PRIVATE_KEY_PATH: ${{ secrets.ASC_PRIVATE_KEY_PATH }}
+          ASC_PRIVATE_KEY_PATH: /tmp/AuthKey.p8
           ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
-        run: go test ./...
+        run: go test -tags=integration -v ./...
 
       - name: Build for macOS
         run: |
