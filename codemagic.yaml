@@ -68,7 +68,7 @@ workflows:
           name: Run all tests (including integration)
           script: |
             # Run full test suite (integration tests require env vars)
-            go test ./...
+            go test -tags=integration ./...
       - script:
           name: Build for macOS
           script: |
