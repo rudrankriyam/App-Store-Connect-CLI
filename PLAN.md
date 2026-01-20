@@ -14,200 +14,21 @@ A fast, AI-agent-friendly CLI for App Store Connect that enables developers to s
 
 **Last Updated:** 2026-01-20
 
-### What Works
-
-- Project structure and Go module setup
-- CLI skeleton with ffcli framework
-- Commands register and show help: `asc --help`, `asc feedback --help`, `asc auth --help`
-- ECDSA JWT signing wired to `.p8` keys
-- Keychain storage with local config fallback
-- Feedback/crash/review endpoints aligned to ASC OpenAPI spec
-- Code compiles and unit tests run
-- Live API validation: feedback/crashes return data; reviews may be empty if no reviews exist
-- Apps/builds list commands working with manual pagination
-- Sorting supported for apps/builds/reviews/feedback/crashes
-- Build info and build expiration commands available
-- Installer script available for latest release downloads
-- HTTP-level client tests and CLI/output tests added
-
 ### What Doesn't Work Yet
 
 - **Pagination** - Manual pagination only (`--limit`, `--next`); no auto-paging yet
 - **Tests** - Integration tests are opt-in and require real credentials
 
-### Files Status
-
-```
-main.go              ✓ Compiles, entry point
-cmd/commands.go      ✓ Compiles, commands defined
-cmd/auth.go          ✓ Compiles, login/logout/status defined
-internal/asc/        ✓ JWT signing with ECDSA (ES256)
-internal/auth/       ✓ Keychain support with config fallback
-internal/config/     ✓ Basic config file handling
-Makefile             ✓ Build targets exist
-```
-
----
-
-## What Was Actually Delivered
-
-### For TestFlight Feedback (Screenshot Submissions)
-
-**Expected Data:**
-- Submission ID
-- Created date
-- Tester email
-- Comment text
-- Screenshot submission metadata
-
-**Current Status:** ✅ Implemented (requires live credentials to verify)
-
-```bash
-asc feedback --app "123456789"
-# Requires valid credentials
-```
-
-**Required in ASC API:**
-- `GET /v1/apps/{id}/betaFeedbackScreenshotSubmissions`
-
-### For Crash Reports (Crash Submissions)
-
-**Expected Data:**
-- Submission ID
-- Created date
-- Tester email
-- Crash log (when available)
-- Device metadata (model, OS version)
-
-**Current Status:** ✅ Implemented (requires live credentials to verify)
-
-```bash
-asc crashes --app "123456789"
-# Requires valid credentials
-```
-
-**Required in ASC API:**
-- `GET /v1/apps/{id}/betaFeedbackCrashSubmissions`
-
-### For App Store Reviews
-
-**Expected Data:**
-- Review ID
-- Created date
-- Rating
-- Title
-- Body
-- Territory
-
-**Current Status:** ✅ Implemented (requires live credentials to verify)
-
-```bash
-asc reviews --app "123456789"
-# Requires valid credentials
-```
-
-**Required in ASC API:**
-- `GET /v1/apps/{id}/customerReviews`
-
 ---
 
 ## Roadmap
-
-### Phase 1: Foundation - REVISED (Current)
-
-**Goal:** Ensure API calls work and add basic filters where supported
-
-#### What Needs Fixing
-
-- [x] Test actual API authentication with App Store Connect
-- [x] Add pagination support
-- [x] Add opt-in integration tests for API calls
-
-#### Deliverables (Actual)
-
-```
-✓ go.mod
-✓ main.go with ffcli
-✓ cmd/commands.go (feedback, crashes, reviews, auth)
-✓ cmd/auth.go (login, logout, status)
-✓ internal/asc/client.go - JWT signing with ECDSA and ASC endpoints
-✓ internal/auth/keychain.go - Keychain support with config fallback
-✓ internal/config/config.go
-✓ Makefile
-✓ CLAUDE.md
-```
-
----
-
-### Phase 2: Core Features (v0.1) - REVISED
-
-**Goal:** Validate feedback, crashes, and reviews against live API
-
-#### Features (Actual Implementation)
-
-1. **TestFlight Feedback Command**
-   ```bash
-   asc feedback --app "APP_ID"
-   # Must return: id, createdDate, email, comment, screenshot metadata
-   ```
-
-2. **TestFlight Crashes Command**
-   ```bash
-   asc crashes --app "APP_ID"
-   # Must return: id, createdDate, email, crash metadata
-   ```
-
-3. **App Store Reviews Command**
-   ```bash
-   asc reviews --app "APP_ID"
-   # Must return: id, createdDate, rating, title, body, territory
-   ```
-
-#### Technical Tasks
-
-- [x] Verify API endpoint paths against ASC OpenAPI spec:
-  - `GET /v1/apps/{id}/betaFeedbackScreenshotSubmissions`
-  - `GET /v1/apps/{id}/betaFeedbackCrashSubmissions`
-  - `GET /v1/apps/{id}/customerReviews`
-- [x] Add review filters (`--stars`, `--territory`) via query params
-- [x] Add pagination support for all list endpoints
-- [x] Add feedback/crash filters where supported (device model, OS version, etc.)
-- [x] Write integration tests (opt-in, real API)
-
----
 
 ### Phase 3: App Management (v0.2)
 
 **Goal:** Add commands for managing apps and builds
 
-#### Features (Current + Remaining)
-
-1. **List Apps** ✅
-   ```bash
-   asc apps
-   ```
-
-2. **List Builds** ✅
-   ```bash
-   asc builds --app "APP_ID"
-   ```
-
-3. **Build Details** ✅
-   ```bash
-   asc builds info --build "BUILD_ID"
-   ```
-
-4. **Expire Build** ✅
-   ```bash
-   asc builds expire --build "BUILD_ID"
-   ```
-
 #### Technical Tasks
 
-- [x] Implement `GET /v1/apps`
-- [x] Implement `GET /v1/apps/{id}/builds`
-- [x] Implement `GET /v1/builds/{id}`
-- [x] Implement `PATCH /v1/builds/{id}`
 - [ ] Add build expiration workflow
 
 ---
@@ -609,8 +430,6 @@ github.com/goreleaser/nfpm/v2     - Packaging via `go run` (optional)
 
 ## Current Status
 
-**Phase 1: Foundation - IMPLEMENTED** (validated locally)
-
 Next: Implement build uploads + submission flows (API 4.1+), then auto-pagination and beta management
 
 ## Known Issues
@@ -625,15 +444,3 @@ Next: Implement build uploads + submission flows (API 4.1+), then auto-paginatio
 3. **Keychain**
    - Keychain supported; local config fallback still exists
 
----
-
-## Success Criteria for v0.1
-
-- [x] `asc feedback --app "APP_ID"` returns screenshot feedback submissions
-- [x] Feedback includes: id, createdDate, email, comment
-- [x] `asc crashes --app "APP_ID"` returns crash submissions
-- [x] Crashes include: id, createdDate, email, crash metadata
-- [x] `asc reviews --app "APP_ID"` returns customer reviews (may be empty)
-- [x] Reviews include: id, createdDate, rating, title, body, territory
-- [x] All commands work with real App Store Connect API keys
-- [x] Opt-in integration tests (real API credentials required)
