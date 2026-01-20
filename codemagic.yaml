@@ -18,31 +18,25 @@ workflows:
           include: true
         - pattern: "*"
           include: true
-    steps:
-      - script:
-          name: Run unit tests (no integration)
-          script: |
-            # Skip integration tests by default
-            go test -short ./...
-      - script:
-          name: Build for macOS
-          script: |
-            mkdir -p build
-            GOOS=darwin GOARCH=amd64 go build -o build/asc-darwin-amd64 .
-            GOOS=darwin GOARCH=arm64 go build -o build/asc-darwin-arm64 .
-      - script:
-          name: Build for Linux
-          script: |
-            GOOS=linux GOARCH=amd64 go build -o build/asc-linux-amd64 .
-            GOOS=linux GOARCH=arm64 go build -o build/asc-linux-arm64 .
-      - script:
-          name: Build for Windows
-          script: |
-            GOOS=windows GOARCH=amd64 go build -o build/asc-windows-amd64.exe .
-      - artifacts:
-          name: Build artifacts
-          paths:
-            - build/*
+    scripts:
+      - name: Run unit tests (no integration)
+        script: |
+          # Skip integration tests by default
+          go test -short ./...
+      - name: Build for macOS
+        script: |
+          mkdir -p build
+          GOOS=darwin GOARCH=amd64 go build -o build/asc-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o build/asc-darwin-arm64 .
+      - name: Build for Linux
+        script: |
+          GOOS=linux GOARCH=amd64 go build -o build/asc-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o build/asc-linux-arm64 .
+      - name: Build for Windows
+        script: |
+          GOOS=windows GOARCH=amd64 go build -o build/asc-windows-amd64.exe .
+    artifacts:
+      - build/*
 
   # Main branch workflow: runs integration tests with real API
   main-workflow:
@@ -51,7 +45,7 @@ workflows:
     environment:
       go:
         version: "latest"
-      variables:
+      vars:
         # Codemagic environment variables (set in project settings)
         # - ASC_KEY_ID
         # - ASC_ISSUER_ID
@@ -63,37 +57,30 @@ workflows:
       branch_patterns:
         - pattern: main
           include: true
-    steps:
-      - script:
-          name: Run all tests (including integration)
-          script: |
-            # Run full test suite (integration tests require env vars)
-            go test ./...
-      - script:
-          name: Build for macOS
-          script: |
-            mkdir -p build
-            GOOS=darwin GOARCH=amd64 go build -o build/asc-darwin-amd64 .
-            GOOS=darwin GOARCH=arm64 go build -o build/asc-darwin-arm64 .
-      - script:
-          name: Build for Linux
-          script: |
-            GOOS=linux GOARCH=amd64 go build -o build/asc-linux-amd64 .
-            GOOS=linux GOARCH=arm64 go build -o build/asc-linux-arm64 .
-      - script:
-          name: Build for Windows
-          script: |
-            GOOS=windows GOARCH=amd64 go build -o build/asc-windows-amd64.exe .
-      - script:
-          name: Create checksums
-          script: |
-            cd build
-            shasum -a 256 * > checksums.txt
-            cat checksums.txt
-      - artifacts:
-          name: Build artifacts
-          paths:
-            - build/*
+    scripts:
+      - name: Run all tests (including integration)
+        script: |
+          # Run full test suite (integration tests require env vars)
+          go test ./...
+      - name: Build for macOS
+        script: |
+          mkdir -p build
+          GOOS=darwin GOARCH=amd64 go build -o build/asc-darwin-amd64 .
+          GOOS=darwin GOARCH=arm64 go build -o build/asc-darwin-arm64 .
+      - name: Build for Linux
+        script: |
+          GOOS=linux GOARCH=amd64 go build -o build/asc-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o build/asc-linux-arm64 .
+      - name: Build for Windows
+        script: |
+          GOOS=windows GOARCH=amd64 go build -o build/asc-windows-amd64.exe .
+      - name: Create checksums
+        script: |
+          cd build
+          shasum -a 256 * > checksums.txt
+          cat checksums.txt
+    artifacts:
+      - build/*
 
   # Release workflow: creates GitHub releases
   release-workflow:
