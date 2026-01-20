@@ -34,6 +34,7 @@ Credentials are stored in the system keychain when available, with a local confi
 		},
 		Exec: func(ctx context.Context, args []string) error {
 			if len(args) == 0 {
+				fmt.Fprintln(os.Stderr, "Error: subcommand required. Run 'asc auth --help' for usage.")
 				return flag.ErrHelp
 			}
 			return nil
