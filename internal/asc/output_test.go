@@ -199,6 +199,111 @@ func TestPrintMarkdown_Apps(t *testing.T) {
 	}
 }
 
+func TestPrintTable_BetaGroups(t *testing.T) {
+	resp := &BetaGroupsResponse{
+		Data: []Resource[BetaGroupAttributes]{
+			{
+				ID: "group-1",
+				Attributes: BetaGroupAttributes{
+					Name:              "Beta",
+					IsInternalGroup:   true,
+					PublicLinkEnabled: false,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Public Link") {
+		t.Fatalf("expected public link header, got: %s", output)
+	}
+	if !strings.Contains(output, "Beta") {
+		t.Fatalf("expected group name in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_BetaGroups(t *testing.T) {
+	resp := &BetaGroupsResponse{
+		Data: []Resource[BetaGroupAttributes]{
+			{
+				ID: "group-1",
+				Attributes: BetaGroupAttributes{
+					Name:            "Beta",
+					IsInternalGroup: false,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| ID | Name | Internal |") {
+		t.Fatalf("expected beta groups header, got: %s", output)
+	}
+	if !strings.Contains(output, "Beta") {
+		t.Fatalf("expected group name in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_BetaTesters(t *testing.T) {
+	resp := &BetaTestersResponse{
+		Data: []Resource[BetaTesterAttributes]{
+			{
+				ID: "tester-1",
+				Attributes: BetaTesterAttributes{
+					Email:      "tester@example.com",
+					FirstName:  "Test",
+					LastName:   "User",
+					State:      BetaTesterStateInvited,
+					InviteType: BetaInviteTypeEmail,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Invite") {
+		t.Fatalf("expected invite header, got: %s", output)
+	}
+	if !strings.Contains(output, "tester@example.com") {
+		t.Fatalf("expected tester email in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_BetaTesters(t *testing.T) {
+	resp := &BetaTestersResponse{
+		Data: []Resource[BetaTesterAttributes]{
+			{
+				ID: "tester-1",
+				Attributes: BetaTesterAttributes{
+					Email:     "tester@example.com",
+					FirstName: "Test",
+					LastName:  "User",
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| ID | Email | Name | State | Invite |") {
+		t.Fatalf("expected beta testers header, got: %s", output)
+	}
+	if !strings.Contains(output, "tester@example.com") {
+		t.Fatalf("expected tester email in output, got: %s", output)
+	}
+}
+
 func TestPrintTable_Builds(t *testing.T) {
 	resp := &BuildsResponse{
 		Data: []Resource[BuildAttributes]{

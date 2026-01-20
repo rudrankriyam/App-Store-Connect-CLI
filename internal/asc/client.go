@@ -46,6 +46,9 @@ const (
 	ResourceTypeBuildUploadFiles           ResourceType = "buildUploadFiles"
 	ResourceTypeAppStoreVersions           ResourceType = "appStoreVersions"
 	ResourceTypeAppStoreVersionSubmissions ResourceType = "appStoreVersionSubmissions"
+	ResourceTypeBetaGroups                 ResourceType = "betaGroups"
+	ResourceTypeBetaTesters                ResourceType = "betaTesters"
+	ResourceTypeBetaTesterInvitations      ResourceType = "betaTesterInvitations"
 )
 
 // Resource is a generic ASC API resource wrapper.
@@ -127,6 +130,21 @@ type BuildsResponse = Response[BuildAttributes]
 // BuildResponse is the response from build detail/updates.
 type BuildResponse = SingleResponse[BuildAttributes]
 
+// BetaGroupsResponse is the response from beta groups endpoints.
+type BetaGroupsResponse = Response[BetaGroupAttributes]
+
+// BetaGroupResponse is the response from beta group detail/creates.
+type BetaGroupResponse = SingleResponse[BetaGroupAttributes]
+
+// BetaTestersResponse is the response from beta testers endpoints.
+type BetaTestersResponse = Response[BetaTesterAttributes]
+
+// BetaTesterResponse is the response from beta tester detail/creates.
+type BetaTesterResponse = SingleResponse[BetaTesterAttributes]
+
+// BetaTesterInvitationResponse is the response from beta tester invitations.
+type BetaTesterInvitationResponse = SingleResponse[struct{}]
+
 type listQuery struct {
 	limit   int
 	nextURL string
@@ -174,6 +192,16 @@ type buildsQuery struct {
 	sort string
 }
 
+type betaGroupsQuery struct {
+	listQuery
+}
+
+type betaTestersQuery struct {
+	listQuery
+	email    string
+	groupIDs []string
+}
+
 // AppAttributes describes an app resource.
 type AppAttributes struct {
 	Name          string `json:"name"`
@@ -192,6 +220,47 @@ type BuildAttributes struct {
 	UsesNonExemptEncryption bool   `json:"usesNonExemptEncryption,omitempty"`
 	Expired                 bool   `json:"expired,omitempty"`
 }
+
+// BetaGroupAttributes describes a beta group resource.
+type BetaGroupAttributes struct {
+	Name                   string `json:"name"`
+	CreatedDate            string `json:"createdDate,omitempty"`
+	IsInternalGroup        bool   `json:"isInternalGroup,omitempty"`
+	HasAccessToAllBuilds   bool   `json:"hasAccessToAllBuilds,omitempty"`
+	PublicLinkEnabled      bool   `json:"publicLinkEnabled,omitempty"`
+	PublicLinkLimitEnabled bool   `json:"publicLinkLimitEnabled,omitempty"`
+	PublicLinkLimit        int    `json:"publicLinkLimit,omitempty"`
+	PublicLink             string `json:"publicLink,omitempty"`
+	FeedbackEnabled        bool   `json:"feedbackEnabled,omitempty"`
+}
+
+// BetaTesterAttributes describes a beta tester resource.
+type BetaTesterAttributes struct {
+	FirstName  string          `json:"firstName,omitempty"`
+	LastName   string          `json:"lastName,omitempty"`
+	Email      string          `json:"email,omitempty"`
+	InviteType BetaInviteType  `json:"inviteType,omitempty"`
+	State      BetaTesterState `json:"state,omitempty"`
+}
+
+// BetaInviteType represents the invitation type for a beta tester.
+type BetaInviteType string
+
+const (
+	BetaInviteTypeEmail      BetaInviteType = "EMAIL"
+	BetaInviteTypePublicLink BetaInviteType = "PUBLIC_LINK"
+)
+
+// BetaTesterState represents the invitation state for a beta tester.
+type BetaTesterState string
+
+const (
+	BetaTesterStateNotInvited BetaTesterState = "NOT_INVITED"
+	BetaTesterStateInvited    BetaTesterState = "INVITED"
+	BetaTesterStateAccepted   BetaTesterState = "ACCEPTED"
+	BetaTesterStateInstalled  BetaTesterState = "INSTALLED"
+	BetaTesterStateRevoked    BetaTesterState = "REVOKED"
+)
 
 // Platform represents an Apple platform.
 type Platform string
@@ -228,6 +297,11 @@ const (
 // Relationship represents a generic API relationship.
 type Relationship struct {
 	Data ResourceData `json:"data"`
+}
+
+// RelationshipList represents a relationship containing multiple resources.
+type RelationshipList struct {
+	Data []ResourceData `json:"data"`
 }
 
 // ResourceData represents the data portion of a resource.
@@ -388,6 +462,64 @@ type AppStoreVersionSubmissionAttributes struct {
 // AppStoreVersionSubmissionResponse is the response from app store version submission endpoint.
 type AppStoreVersionSubmissionResponse = SingleResourceResponse[AppStoreVersionSubmissionAttributes]
 
+// BetaGroupCreateData is the data portion of a beta group create request.
+type BetaGroupCreateData struct {
+	Type          ResourceType            `json:"type"`
+	Attributes    BetaGroupAttributes     `json:"attributes"`
+	Relationships *BetaGroupRelationships `json:"relationships"`
+}
+
+// BetaGroupCreateRequest is a request to create a beta group.
+type BetaGroupCreateRequest struct {
+	Data BetaGroupCreateData `json:"data"`
+}
+
+// BetaGroupRelationships describes relationships for beta groups.
+type BetaGroupRelationships struct {
+	App *Relationship `json:"app"`
+}
+
+// BetaTesterCreateAttributes describes attributes for creating a beta tester.
+type BetaTesterCreateAttributes struct {
+	FirstName string `json:"firstName,omitempty"`
+	LastName  string `json:"lastName,omitempty"`
+	Email     string `json:"email"`
+}
+
+// BetaTesterCreateRelationships describes relationships for beta tester creation.
+type BetaTesterCreateRelationships struct {
+	BetaGroups *RelationshipList `json:"betaGroups,omitempty"`
+}
+
+// BetaTesterCreateData is the data portion of a beta tester create request.
+type BetaTesterCreateData struct {
+	Type          ResourceType                   `json:"type"`
+	Attributes    BetaTesterCreateAttributes     `json:"attributes"`
+	Relationships *BetaTesterCreateRelationships `json:"relationships,omitempty"`
+}
+
+// BetaTesterCreateRequest is a request to create a beta tester.
+type BetaTesterCreateRequest struct {
+	Data BetaTesterCreateData `json:"data"`
+}
+
+// BetaTesterInvitationCreateRelationships describes relationships for invitations.
+type BetaTesterInvitationCreateRelationships struct {
+	App        *Relationship `json:"app"`
+	BetaTester *Relationship `json:"betaTester,omitempty"`
+}
+
+// BetaTesterInvitationCreateData is the data portion of an invitation create request.
+type BetaTesterInvitationCreateData struct {
+	Type          ResourceType                             `json:"type"`
+	Relationships *BetaTesterInvitationCreateRelationships `json:"relationships"`
+}
+
+// BetaTesterInvitationCreateRequest is a request to create a beta tester invitation.
+type BetaTesterInvitationCreateRequest struct {
+	Data BetaTesterInvitationCreateData `json:"data"`
+}
+
 // BuildUploadResult represents CLI output for build upload preparation.
 type BuildUploadResult struct {
 	UploadID   string            `json:"uploadId"`
@@ -401,6 +533,21 @@ type BuildUploadResult struct {
 type AppStoreVersionSubmissionResult struct {
 	SubmissionID string  `json:"submissionId"`
 	CreatedDate  *string `json:"createdDate,omitempty"`
+}
+
+// BetaTesterInvitationResult represents CLI output for invitations.
+type BetaTesterInvitationResult struct {
+	InvitationID string `json:"invitationId"`
+	TesterID     string `json:"testerId,omitempty"`
+	AppID        string `json:"appId,omitempty"`
+	Email        string `json:"email,omitempty"`
+}
+
+// BetaTesterDeleteResult represents CLI output for deletions.
+type BetaTesterDeleteResult struct {
+	ID      string `json:"id"`
+	Email   string `json:"email,omitempty"`
+	Deleted bool   `json:"deleted"`
 }
 
 // FeedbackOption is a functional option for GetFeedback.
@@ -417,6 +564,12 @@ type AppsOption func(*appsQuery)
 
 // BuildsOption is a functional option for GetBuilds.
 type BuildsOption func(*buildsQuery)
+
+// BetaGroupsOption is a functional option for GetBetaGroups.
+type BetaGroupsOption func(*betaGroupsQuery)
+
+// BetaTestersOption is a functional option for GetBetaTesters.
+type BetaTestersOption func(*betaTestersQuery)
 
 // WithFeedbackDeviceModels filters feedback by device model(s).
 func WithFeedbackDeviceModels(models []string) FeedbackOption {
@@ -676,6 +829,56 @@ func WithBuildsSort(sort string) BuildsOption {
 	}
 }
 
+// WithBetaGroupsLimit sets the max number of beta groups to return.
+func WithBetaGroupsLimit(limit int) BetaGroupsOption {
+	return func(q *betaGroupsQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithBetaGroupsNextURL uses a next page URL directly.
+func WithBetaGroupsNextURL(next string) BetaGroupsOption {
+	return func(q *betaGroupsQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithBetaTestersLimit sets the max number of beta testers to return.
+func WithBetaTestersLimit(limit int) BetaTestersOption {
+	return func(q *betaTestersQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithBetaTestersNextURL uses a next page URL directly.
+func WithBetaTestersNextURL(next string) BetaTestersOption {
+	return func(q *betaTestersQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithBetaTestersEmail filters beta testers by email.
+func WithBetaTestersEmail(email string) BetaTestersOption {
+	return func(q *betaTestersQuery) {
+		q.email = strings.TrimSpace(email)
+	}
+}
+
+// WithBetaTestersGroupIDs filters beta testers by beta group ID(s).
+func WithBetaTestersGroupIDs(ids []string) BetaTestersOption {
+	return func(q *betaTestersQuery) {
+		q.groupIDs = normalizeList(ids)
+	}
+}
+
 // NewClient creates a new ASC client
 func NewClient(keyID, issuerID, privateKeyPath string) (*Client, error) {
 	if err := auth.ValidateKeyFile(privateKeyPath); err != nil {
@@ -828,6 +1031,25 @@ func buildCrashQuery(query *crashQuery) string {
 	if query.sort != "" {
 		values.Set("sort", query.sort)
 	}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildBetaGroupsQuery(query *betaGroupsQuery) string {
+	values := url.Values{}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildBetaTestersQuery(appID string, query *betaTestersQuery) string {
+	values := url.Values{}
+	if strings.TrimSpace(appID) != "" {
+		values.Set("filter[apps]", strings.TrimSpace(appID))
+	}
+	if strings.TrimSpace(query.email) != "" {
+		values.Set("filter[email]", strings.TrimSpace(query.email))
+	}
+	addCSV(values, "filter[betaGroups]", query.groupIDs)
 	addLimit(values, query.limit)
 	return values.Encode()
 }
@@ -1027,6 +1249,189 @@ func (c *Client) GetBuilds(ctx context.Context, appID string, opts ...BuildsOpti
 	}
 
 	var response BuildsResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// GetBetaGroups retrieves the list of beta groups for an app.
+func (c *Client) GetBetaGroups(ctx context.Context, appID string, opts ...BetaGroupsOption) (*BetaGroupsResponse, error) {
+	query := &betaGroupsQuery{}
+	for _, opt := range opts {
+		opt(query)
+	}
+
+	path := fmt.Sprintf("/v1/apps/%s/betaGroups", appID)
+	if query.nextURL != "" {
+		path = query.nextURL
+	} else if queryString := buildBetaGroupsQuery(query); queryString != "" {
+		path += "?" + queryString
+	}
+
+	data, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response BetaGroupsResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// CreateBetaGroup creates a beta group for an app.
+func (c *Client) CreateBetaGroup(ctx context.Context, appID, name string) (*BetaGroupResponse, error) {
+	payload := BetaGroupCreateRequest{
+		Data: BetaGroupCreateData{
+			Type:       ResourceTypeBetaGroups,
+			Attributes: BetaGroupAttributes{Name: name},
+			Relationships: &BetaGroupRelationships{
+				App: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeApps,
+						ID:   appID,
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.do(ctx, "POST", "/v1/betaGroups", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response BetaGroupResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// GetBetaTesters retrieves beta testers for an app.
+func (c *Client) GetBetaTesters(ctx context.Context, appID string, opts ...BetaTestersOption) (*BetaTestersResponse, error) {
+	query := &betaTestersQuery{}
+	for _, opt := range opts {
+		opt(query)
+	}
+
+	path := "/v1/betaTesters"
+	if query.nextURL != "" {
+		path = query.nextURL
+	} else if queryString := buildBetaTestersQuery(appID, query); queryString != "" {
+		path += "?" + queryString
+	}
+
+	data, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response BetaTestersResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// CreateBetaTester creates a beta tester.
+func (c *Client) CreateBetaTester(ctx context.Context, email, firstName, lastName string, groupIDs []string) (*BetaTesterResponse, error) {
+	groupIDs = normalizeList(groupIDs)
+	var relationships *BetaTesterCreateRelationships
+	if len(groupIDs) > 0 {
+		relData := make([]ResourceData, 0, len(groupIDs))
+		for _, groupID := range groupIDs {
+			relData = append(relData, ResourceData{
+				Type: ResourceTypeBetaGroups,
+				ID:   groupID,
+			})
+		}
+		relationships = &BetaTesterCreateRelationships{
+			BetaGroups: &RelationshipList{Data: relData},
+		}
+	}
+
+	payload := BetaTesterCreateRequest{
+		Data: BetaTesterCreateData{
+			Type: ResourceTypeBetaTesters,
+			Attributes: BetaTesterCreateAttributes{
+				FirstName: strings.TrimSpace(firstName),
+				LastName:  strings.TrimSpace(lastName),
+				Email:     strings.TrimSpace(email),
+			},
+			Relationships: relationships,
+		},
+	}
+
+	body, err := BuildRequestBody(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.do(ctx, "POST", "/v1/betaTesters", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response BetaTesterResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// DeleteBetaTester deletes a beta tester by ID.
+func (c *Client) DeleteBetaTester(ctx context.Context, testerID string) error {
+	path := fmt.Sprintf("/v1/betaTesters/%s", testerID)
+	_, err := c.do(ctx, "DELETE", path, nil)
+	return err
+}
+
+// CreateBetaTesterInvitation creates a beta tester invitation.
+func (c *Client) CreateBetaTesterInvitation(ctx context.Context, appID, testerID string) (*BetaTesterInvitationResponse, error) {
+	payload := BetaTesterInvitationCreateRequest{
+		Data: BetaTesterInvitationCreateData{
+			Type: ResourceTypeBetaTesterInvitations,
+			Relationships: &BetaTesterInvitationCreateRelationships{
+				App: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeApps,
+						ID:   appID,
+					},
+				},
+				BetaTester: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeBetaTesters,
+						ID:   testerID,
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.do(ctx, "POST", "/v1/betaTesterInvitations", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response BetaTesterInvitationResponse
 	if err := json.Unmarshal(data, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -1235,6 +1640,14 @@ func PrintMarkdown(data interface{}) error {
 		return printBuildsMarkdown(v)
 	case *BuildResponse:
 		return printBuildsMarkdown(&BuildsResponse{Data: []Resource[BuildAttributes]{v.Data}})
+	case *BetaGroupsResponse:
+		return printBetaGroupsMarkdown(v)
+	case *BetaGroupResponse:
+		return printBetaGroupsMarkdown(&BetaGroupsResponse{Data: []Resource[BetaGroupAttributes]{v.Data}})
+	case *BetaTestersResponse:
+		return printBetaTestersMarkdown(v)
+	case *BetaTesterResponse:
+		return printBetaTestersMarkdown(&BetaTestersResponse{Data: []Resource[BetaTesterAttributes]{v.Data}})
 	case *BuildUploadResult:
 		return printBuildUploadResultMarkdown(v)
 	case *AppStoreVersionSubmissionResult:
@@ -1259,6 +1672,14 @@ func PrintTable(data interface{}) error {
 		return printBuildsTable(v)
 	case *BuildResponse:
 		return printBuildsTable(&BuildsResponse{Data: []Resource[BuildAttributes]{v.Data}})
+	case *BetaGroupsResponse:
+		return printBetaGroupsTable(v)
+	case *BetaGroupResponse:
+		return printBetaGroupsTable(&BetaGroupsResponse{Data: []Resource[BetaGroupAttributes]{v.Data}})
+	case *BetaTestersResponse:
+		return printBetaTestersTable(v)
+	case *BetaTesterResponse:
+		return printBetaTestersTable(&BetaTestersResponse{Data: []Resource[BetaTesterAttributes]{v.Data}})
 	case *BuildUploadResult:
 		return printBuildUploadResultTable(v)
 	case *AppStoreVersionSubmissionResult:
@@ -1464,6 +1885,51 @@ func printAppsTable(resp *AppsResponse) error {
 	return w.Flush()
 }
 
+func printBetaGroupsTable(resp *BetaGroupsResponse) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tName\tInternal\tPublic Link Enabled\tPublic Link")
+	for _, item := range resp.Data {
+		fmt.Fprintf(w, "%s\t%s\t%t\t%t\t%s\n",
+			item.ID,
+			compactWhitespace(item.Attributes.Name),
+			item.Attributes.IsInternalGroup,
+			item.Attributes.PublicLinkEnabled,
+			item.Attributes.PublicLink,
+		)
+	}
+	return w.Flush()
+}
+
+func formatBetaTesterName(attr BetaTesterAttributes) string {
+	first := strings.TrimSpace(attr.FirstName)
+	last := strings.TrimSpace(attr.LastName)
+	switch {
+	case first == "" && last == "":
+		return ""
+	case first == "":
+		return last
+	case last == "":
+		return first
+	default:
+		return first + " " + last
+	}
+}
+
+func printBetaTestersTable(resp *BetaTestersResponse) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tEmail\tName\tState\tInvite")
+	for _, item := range resp.Data {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			item.ID,
+			item.Attributes.Email,
+			compactWhitespace(formatBetaTesterName(item.Attributes)),
+			string(item.Attributes.State),
+			string(item.Attributes.InviteType),
+		)
+	}
+	return w.Flush()
+}
+
 func printBuildsTable(resp *BuildsResponse) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "Version\tUploaded\tProcessing\tExpired")
@@ -1487,6 +1953,36 @@ func printAppsMarkdown(resp *AppsResponse) error {
 			escapeMarkdown(item.Attributes.Name),
 			escapeMarkdown(item.Attributes.BundleID),
 			escapeMarkdown(item.Attributes.SKU),
+		)
+	}
+	return nil
+}
+
+func printBetaGroupsMarkdown(resp *BetaGroupsResponse) error {
+	fmt.Fprintln(os.Stdout, "| ID | Name | Internal | Public Link Enabled | Public Link |")
+	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- | --- |")
+	for _, item := range resp.Data {
+		fmt.Fprintf(os.Stdout, "| %s | %s | %t | %t | %s |\n",
+			escapeMarkdown(item.ID),
+			escapeMarkdown(item.Attributes.Name),
+			item.Attributes.IsInternalGroup,
+			item.Attributes.PublicLinkEnabled,
+			escapeMarkdown(item.Attributes.PublicLink),
+		)
+	}
+	return nil
+}
+
+func printBetaTestersMarkdown(resp *BetaTestersResponse) error {
+	fmt.Fprintln(os.Stdout, "| ID | Email | Name | State | Invite |")
+	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- | --- |")
+	for _, item := range resp.Data {
+		fmt.Fprintf(os.Stdout, "| %s | %s | %s | %s | %s |\n",
+			escapeMarkdown(item.ID),
+			escapeMarkdown(item.Attributes.Email),
+			escapeMarkdown(formatBetaTesterName(item.Attributes)),
+			escapeMarkdown(string(item.Attributes.State)),
+			escapeMarkdown(string(item.Attributes.InviteType)),
 		)
 	}
 	return nil

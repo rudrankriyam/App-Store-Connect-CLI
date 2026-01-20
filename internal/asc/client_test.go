@@ -170,6 +170,48 @@ func TestBuildCrashQuery(t *testing.T) {
 	}
 }
 
+func TestBuildBetaGroupsQuery(t *testing.T) {
+	query := &betaGroupsQuery{}
+	WithBetaGroupsLimit(10)(query)
+
+	values, err := url.ParseQuery(buildBetaGroupsQuery(query))
+	if err != nil {
+		t.Fatalf("failed to parse query: %v", err)
+	}
+	if got := values.Get("limit"); got != "10" {
+		t.Fatalf("expected limit=10, got %q", got)
+	}
+}
+
+func TestBuildBetaTestersQuery(t *testing.T) {
+	query := &betaTestersQuery{}
+	opts := []BetaTestersOption{
+		WithBetaTestersLimit(25),
+		WithBetaTestersEmail("tester@example.com"),
+		WithBetaTestersGroupIDs([]string{"group-1", " group-2 "}),
+	}
+	for _, opt := range opts {
+		opt(query)
+	}
+
+	values, err := url.ParseQuery(buildBetaTestersQuery("APP_ID", query))
+	if err != nil {
+		t.Fatalf("failed to parse query: %v", err)
+	}
+	if got := values.Get("filter[apps]"); got != "APP_ID" {
+		t.Fatalf("expected filter[apps]=APP_ID, got %q", got)
+	}
+	if got := values.Get("filter[email]"); got != "tester@example.com" {
+		t.Fatalf("expected filter[email]=tester@example.com, got %q", got)
+	}
+	if got := values.Get("filter[betaGroups]"); got != "group-1,group-2" {
+		t.Fatalf("expected filter[betaGroups]=group-1,group-2, got %q", got)
+	}
+	if got := values.Get("limit"); got != "25" {
+		t.Fatalf("expected limit=25, got %q", got)
+	}
+}
+
 func TestBuildRequestBody(t *testing.T) {
 	body, err := BuildRequestBody(map[string]string{"hello": "world"})
 	if err != nil {
