@@ -332,6 +332,7 @@ func AnalyticsGetCommand() *ffcli.Command {
 	includeSegments := fs.Bool("include-segments", false, "Include report segments with download URLs")
 	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
 	next := fs.String("next", "", "Fetch next page using a links.next URL")
+	paginate := fs.Bool("paginate", false, "Paginate all reports (recommended with --date)")
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
 
@@ -345,7 +346,7 @@ Examples:
   asc analytics get --request-id "REQUEST_ID"
   asc analytics get --request-id "REQUEST_ID" --include-segments
   asc analytics get --request-id "REQUEST_ID" --instance-id "INSTANCE_ID"
-  asc analytics get --request-id "REQUEST_ID" --date "2024-01-20"`,
+  asc analytics get --request-id "REQUEST_ID" --date "2024-01-20" --paginate`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
@@ -383,7 +384,7 @@ Examples:
 			requestCtx, cancel := contextWithTimeout(ctx)
 			defer cancel()
 
-			paginateReports := strings.TrimSpace(*instanceID) != "" && strings.TrimSpace(*next) == ""
+			paginateReports := strings.TrimSpace(*next) == "" && (strings.TrimSpace(*instanceID) != "" || *paginate)
 			reports, links, err := fetchAnalyticsReports(requestCtx, client, strings.TrimSpace(*requestID), *limit, *next, paginateReports)
 			if err != nil {
 				return fmt.Errorf("analytics get: failed to fetch reports: %w", err)
@@ -463,6 +464,9 @@ Examples:
 				return fmt.Errorf("analytics get: instance %q not found for request %q", strings.TrimSpace(*instanceID), strings.TrimSpace(*requestID))
 			}
 			if dateFilter != "" && len(result.Data) == 0 {
+				if strings.TrimSpace(*next) == "" && !*paginate {
+					return fmt.Errorf("analytics get: no instances found for date %q in the first page of reports (use --paginate or --next)", dateFilter)
+				}
 				return fmt.Errorf("analytics get: no instances found for date %q", dateFilter)
 			}
 
