@@ -934,3 +934,78 @@ func TestPrintMarkdown_AppStoreVersionAttachBuildResult(t *testing.T) {
 		t.Fatalf("expected version ID in output, got: %s", output)
 	}
 }
+
+func TestPrintTable_SalesReportResult(t *testing.T) {
+	result := &SalesReportResult{
+		VendorNumber:  "12345678",
+		ReportType:    "SALES",
+		ReportSubType: "SUMMARY",
+		Frequency:     "DAILY",
+		ReportDate:    "2024-01-20",
+		Version:       "1_0",
+		FilePath:      "sales_report_2024-01-20_SALES.tsv.gz",
+		FileSize:      1234,
+		Decompressed:  false,
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "Vendor") {
+		t.Fatalf("expected vendor header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "sales_report_2024-01-20_SALES.tsv.gz") {
+		t.Fatalf("expected file path in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_AnalyticsReportRequestResult(t *testing.T) {
+	result := &AnalyticsReportRequestResult{
+		RequestID:   "req-1",
+		AppID:       "app-1",
+		AccessType:  "ONGOING",
+		State:       "PROCESSING",
+		CreatedDate: "2024-01-20T12:00:00Z",
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(result)
+	})
+
+	if !strings.Contains(output, "| Request ID |") {
+		t.Fatalf("expected request header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "req-1") {
+		t.Fatalf("expected request ID in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_AnalyticsReportRequests(t *testing.T) {
+	resp := &AnalyticsReportRequestsResponse{
+		Data: []AnalyticsReportRequestResource{
+			{
+				ID: "req-1",
+				Attributes: AnalyticsReportRequestAttributes{
+					AccessType:  AnalyticsAccessTypeOngoing,
+					State:       AnalyticsReportRequestStateProcessing,
+					CreatedDate: "2024-01-20T12:00:00Z",
+				},
+				Relationships: &AnalyticsReportRequestRelationships{
+					App: &Relationship{Data: ResourceData{Type: ResourceTypeApps, ID: "app-1"}},
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Access Type") {
+		t.Fatalf("expected access type header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "req-1") {
+		t.Fatalf("expected request ID in output, got: %s", output)
+	}
+}

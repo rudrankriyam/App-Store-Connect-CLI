@@ -793,6 +793,7 @@ func RootCommand(version string) *ffcli.Command {
 			FeedbackCommand(),
 			CrashesCommand(),
 			ReviewsCommand(),
+			AnalyticsCommand(),
 			AppsCommand(),
 			BuildsCommand(),
 			VersionsCommand(),
@@ -883,7 +884,7 @@ func contextWithTimeout(ctx context.Context) (context.Context, context.CancelFun
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	return context.WithTimeout(ctx, asc.DefaultTimeout)
+	return context.WithTimeout(ctx, asc.ResolveTimeout())
 }
 
 func splitCSV(value string) []string {

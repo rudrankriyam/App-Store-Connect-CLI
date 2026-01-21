@@ -60,6 +60,11 @@ Environment variable fallback:
 App ID fallback:
 - `ASC_APP_ID`
 
+Analytics & sales env:
+- `ASC_VENDOR_NUMBER` (Sales and Trends reports)
+- `ASC_TIMEOUT` (e.g., `90s`, `2m`)
+- `ASC_TIMEOUT_SECONDS` (e.g., `120`)
+
 ## Commands
 
 ### Agent Quickstart
@@ -118,6 +123,34 @@ asc reviews --app "123456789" --sort -createdDate --limit 5
 # Fetch next page using links.next
 asc reviews --next "<links.next>"
 ```
+
+### Analytics & Sales
+
+```bash
+# Download daily sales summary (writes .tsv.gz)
+asc analytics sales --vendor "12345678" --type SALES --subtype SUMMARY --frequency DAILY --date "2024-01-20"
+
+# Download and decompress
+asc analytics sales --vendor "12345678" --type SALES --subtype SUMMARY --frequency DAILY --date "2024-01-20" --decompress
+
+# Create analytics report request
+asc analytics request --app "123456789" --access-type ONGOING
+
+# List analytics report requests
+asc analytics requests --app "123456789"
+
+# Get analytics reports with instances
+asc analytics get --request-id "REQUEST_ID"
+
+# Download analytics report data
+asc analytics download --request-id "REQUEST_ID" --instance-id "INSTANCE_ID"
+```
+
+Notes:
+- Sales report date formats: DAILY/WEEKLY `YYYY-MM-DD`, MONTHLY `YYYY-MM`, YEARLY `YYYY`
+- Reports may not be available yet; ASC returns availability errors when data is pending
+- Use `ASC_TIMEOUT` or `ASC_TIMEOUT_SECONDS` for long analytics pagination
+- `asc analytics get --date ... --paginate` will scan all report pages (slower, but avoids missing instances)
 
 ### Apps & Builds
 
