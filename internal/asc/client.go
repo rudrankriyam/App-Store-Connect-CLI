@@ -102,7 +102,7 @@ func ResolveRetryOptions() RetryOptions {
 func WithRetry[T any](ctx context.Context, fn func() (T, error), opts RetryOptions) (T, error) {
 	var zero T
 
-	if opts.MaxRetries <= 0 {
+	if opts.MaxRetries < 0 {
 		opts.MaxRetries = DefaultMaxRetries
 	}
 	if opts.BaseDelay <= 0 {
@@ -127,7 +127,7 @@ func WithRetry[T any](ctx context.Context, fn func() (T, error), opts RetryOptio
 
 		// Check if we've exceeded max retries
 		if attempt >= opts.MaxRetries {
-			return zero, fmt.Errorf("retry limit exceeded after %d attempts: %w", attempt, err)
+			return zero, fmt.Errorf("retry limit exceeded after %d attempts: %w", attempt+1, err)
 		}
 
 		// Calculate delay
