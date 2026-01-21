@@ -139,10 +139,12 @@ func normalizeReportDate(value string, frequency asc.SalesReportFrequency) (stri
 		if parsed.Day() != 1 {
 			return "", fmt.Errorf("monthly reports require --date on the first day of the month")
 		}
+		return parsed.Format("2006-01"), nil
 	case asc.SalesReportFrequencyYearly:
 		if parsed.Month() != time.January || parsed.Day() != 1 {
 			return "", fmt.Errorf("yearly reports require --date on January 1st")
 		}
+		return parsed.Format("2006"), nil
 	}
 	return parsed.Format("2006-01-02"), nil
 }
