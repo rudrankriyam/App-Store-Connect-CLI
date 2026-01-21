@@ -22,11 +22,6 @@ import (
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/auth"
 )
 
-func init() {
-	// Seed the random number generator for jitter
-	rand.Seed(time.Now().UnixNano())
-}
-
 const (
 	// BaseURL is the App Store Connect API base URL
 	BaseURL = "https://api.appstoreconnect.apple.com"
