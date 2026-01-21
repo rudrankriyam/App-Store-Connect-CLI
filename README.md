@@ -211,8 +211,8 @@ asc feedback --app "123456789"
 
 ```bash
 # Add tap and install
-brew tap rudrank/tap
-brew install asc
+brew tap rudrankriyam/tap
+brew install rudrankriyam/tap/asc
 ```
 
 ### From Source
