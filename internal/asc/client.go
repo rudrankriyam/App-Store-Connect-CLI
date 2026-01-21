@@ -28,6 +28,21 @@ const (
 	tokenLifetime  = 20 * time.Minute
 )
 
+// ResolveTimeout returns the request timeout, optionally overridden by env vars.
+func ResolveTimeout() time.Duration {
+	timeout := DefaultTimeout
+	if override := strings.TrimSpace(os.Getenv("ASC_TIMEOUT")); override != "" {
+		if parsed, err := time.ParseDuration(override); err == nil && parsed > 0 {
+			timeout = parsed
+		}
+	} else if override := strings.TrimSpace(os.Getenv("ASC_TIMEOUT_SECONDS")); override != "" {
+		if parsed, err := time.ParseDuration(override + "s"); err == nil && parsed > 0 {
+			timeout = parsed
+		}
+	}
+	return timeout
+}
+
 // Client is an App Store Connect API client
 type Client struct {
 	httpClient *http.Client
@@ -1223,7 +1238,7 @@ func NewClient(keyID, issuerID, privateKeyPath string) (*Client, error) {
 
 	return &Client{
 		httpClient: &http.Client{
-			Timeout: DefaultTimeout,
+			Timeout: ResolveTimeout(),
 		},
 		keyID:      keyID,
 		issuerID:   issuerID,
