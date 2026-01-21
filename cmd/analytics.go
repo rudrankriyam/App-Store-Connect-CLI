@@ -383,7 +383,7 @@ Examples:
 			requestCtx, cancel := contextWithTimeout(ctx)
 			defer cancel()
 
-			paginateReports := strings.TrimSpace(*instanceID) != "" && strings.TrimSpace(*next) == ""
+			paginateReports := strings.TrimSpace(*next) == "" && (strings.TrimSpace(*instanceID) != "" || dateFilter != "")
 			reports, links, err := fetchAnalyticsReports(requestCtx, client, strings.TrimSpace(*requestID), *limit, *next, paginateReports)
 			if err != nil {
 				return fmt.Errorf("analytics get: failed to fetch reports: %w", err)
