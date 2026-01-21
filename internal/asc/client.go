@@ -2343,17 +2343,11 @@ type Links struct {
 // PaginatedResponse represents a response that supports pagination
 type PaginatedResponse interface {
 	GetLinks() *Links
-	GetData() interface{}
 }
 
 // GetLinks returns the links field for pagination
 func (r *Response[T]) GetLinks() *Links {
 	return &r.Links
-}
-
-// GetData returns the data field for aggregation
-func (r *Response[T]) GetData() interface{} {
-	return r.Data
 }
 
 // PaginateFunc is a function that fetches a page of results
