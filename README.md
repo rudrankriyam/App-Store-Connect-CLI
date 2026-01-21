@@ -60,6 +60,11 @@ Environment variable fallback:
 App ID fallback:
 - `ASC_APP_ID`
 
+Analytics & sales env:
+- `ASC_VENDOR_NUMBER` (Sales and Trends reports)
+- `ASC_TIMEOUT` (e.g., `90s`, `2m`)
+- `ASC_TIMEOUT_SECONDS` (e.g., `120`)
+
 ## Commands
 
 ### Agent Quickstart
@@ -140,6 +145,12 @@ asc analytics get --request-id "REQUEST_ID"
 # Download analytics report data
 asc analytics download --request-id "REQUEST_ID" --instance-id "INSTANCE_ID"
 ```
+
+Notes:
+- Sales report date formats: DAILY/WEEKLY `YYYY-MM-DD`, MONTHLY `YYYY-MM`, YEARLY `YYYY`
+- Reports may not be available yet; ASC returns availability errors when data is pending
+- Use `ASC_TIMEOUT` or `ASC_TIMEOUT_SECONDS` for long analytics pagination
+- `asc analytics get --date ... --paginate` will scan all report pages (slower, but avoids missing instances)
 
 ### Apps & Builds
 

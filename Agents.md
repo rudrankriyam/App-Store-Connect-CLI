@@ -103,6 +103,18 @@ Environment variables (fallback):
 - `ASC_ISSUER_ID`
 - `ASC_PRIVATE_KEY_PATH`
 
+Analytics & sales env:
+- `ASC_VENDOR_NUMBER`
+- `ASC_TIMEOUT` (duration like `90s`, `2m`)
+- `ASC_TIMEOUT_SECONDS`
+
+## Analytics & Sales Notes
+
+- Sales report date formats: DAILY/WEEKLY `YYYY-MM-DD`, MONTHLY `YYYY-MM`, YEARLY `YYYY`
+- Vendor number comes from Sales and Trends → Reports URL (`vendorNumber=...`)
+- Use `--paginate` with `asc analytics get --date` to avoid missing instances on later pages
+- Long analytics runs can require raising `ASC_TIMEOUT`
+
 ## Code Style
 
 - Use `ffcli` for command structure
