@@ -934,15 +934,17 @@ func (p *stringsParser) skipWhitespaceAndComments() error {
 		if p.peek() == '/' && p.peekNext() == '*' {
 			p.next()
 			p.next()
+			foundEnd := false
 			for !p.eof() {
 				if p.peek() == '*' && p.peekNext() == '/' {
 					p.next()
 					p.next()
+					foundEnd = true
 					break
 				}
 				p.next()
 			}
-			if p.eof() {
+			if !foundEnd {
 				return p.errorf("unterminated block comment")
 			}
 			continue
