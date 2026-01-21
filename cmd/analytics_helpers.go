@@ -130,21 +130,26 @@ func normalizeReportDate(value string, frequency asc.SalesReportFrequency) (stri
 	if trimmed == "" {
 		return "", fmt.Errorf("--date is required")
 	}
-	parsed, err := time.Parse("2006-01-02", trimmed)
-	if err != nil {
-		return "", fmt.Errorf("--date must be in YYYY-MM-DD format")
-	}
 	switch frequency {
 	case asc.SalesReportFrequencyMonthly:
-		if parsed.Day() != 1 {
-			return "", fmt.Errorf("monthly reports require --date on the first day of the month")
+		parsed, err := time.Parse("2006-01", trimmed)
+		if err != nil {
+			return "", fmt.Errorf("--date must be in YYYY-MM format for monthly reports")
 		}
+		return parsed.Format("2006-01"), nil
 	case asc.SalesReportFrequencyYearly:
-		if parsed.Month() != time.January || parsed.Day() != 1 {
-			return "", fmt.Errorf("yearly reports require --date on January 1st")
+		parsed, err := time.Parse("2006", trimmed)
+		if err != nil {
+			return "", fmt.Errorf("--date must be in YYYY format for yearly reports")
 		}
+		return parsed.Format("2006"), nil
+	default:
+		parsed, err := time.Parse("2006-01-02", trimmed)
+		if err != nil {
+			return "", fmt.Errorf("--date must be in YYYY-MM-DD format")
+		}
+		return parsed.Format("2006-01-02"), nil
 	}
-	return parsed.Format("2006-01-02"), nil
 }
 
 func normalizeAnalyticsDateFilter(value string) (string, error) {

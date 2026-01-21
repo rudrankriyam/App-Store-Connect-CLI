@@ -51,7 +51,7 @@ func AnalyticsSalesCommand() *ffcli.Command {
 	reportType := fs.String("type", "", "Report type: SALES, PRE_ORDER, NEWSSTAND, SUBSCRIPTION, SUBSCRIPTION_EVENT")
 	reportSubType := fs.String("subtype", "", "Report subtype: SUMMARY, DETAILED")
 	frequency := fs.String("frequency", "", "Frequency: DAILY, WEEKLY, MONTHLY, YEARLY")
-	date := fs.String("date", "", "Report date in YYYY-MM-DD format")
+	date := fs.String("date", "", "Report date: daily/weekly YYYY-MM-DD, monthly YYYY-MM, yearly YYYY")
 	version := fs.String("version", "1_0", "Report format version: 1_0 (default), 1_1")
 	output := fs.String("output", "", "Output file path (default: sales_report_{date}_{type}.tsv.gz)")
 	decompress := fs.Bool("decompress", false, "Decompress gzip output to .tsv")
@@ -66,7 +66,7 @@ func AnalyticsSalesCommand() *ffcli.Command {
 
 Examples:
   asc analytics sales --vendor "12345678" --type SALES --subtype SUMMARY --frequency DAILY --date "2024-01-20"
-  asc analytics sales --vendor "12345678" --type SUBSCRIPTION --subtype DETAILED --frequency MONTHLY --date "2024-01-01"
+  asc analytics sales --vendor "12345678" --type SUBSCRIPTION --subtype DETAILED --frequency MONTHLY --date "2024-01"
   asc analytics sales --vendor "12345678" --type SALES --subtype SUMMARY --frequency DAILY --date "2024-01-20" --decompress
   asc analytics sales --vendor "12345678" --type SALES --subtype SUMMARY --frequency DAILY --date "2024-01-20" --output "reports/daily_sales.tsv.gz"`,
 		FlagSet:   fs,

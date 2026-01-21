@@ -43,6 +43,26 @@ func TestNormalizeReportDate_MonthlyValidation(t *testing.T) {
 	}
 }
 
+func TestNormalizeReportDate_MonthlyFormat(t *testing.T) {
+	date, err := normalizeReportDate("2024-01", asc.SalesReportFrequencyMonthly)
+	if err != nil {
+		t.Fatalf("expected monthly date to parse, got %v", err)
+	}
+	if date != "2024-01" {
+		t.Fatalf("expected date to be 2024-01, got %q", date)
+	}
+}
+
+func TestNormalizeReportDate_YearlyFormat(t *testing.T) {
+	date, err := normalizeReportDate("2024", asc.SalesReportFrequencyYearly)
+	if err != nil {
+		t.Fatalf("expected yearly date to parse, got %v", err)
+	}
+	if date != "2024" {
+		t.Fatalf("expected date to be 2024, got %q", date)
+	}
+}
+
 func TestDecompressGzipFile(t *testing.T) {
 	tempDir := t.TempDir()
 	source := filepath.Join(tempDir, "source.tsv.gz")
