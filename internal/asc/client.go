@@ -52,6 +52,10 @@ const (
 	ResourceTypeAppStoreVersionLocalizations ResourceType = "appStoreVersionLocalizations"
 	ResourceTypeAppInfoLocalizations         ResourceType = "appInfoLocalizations"
 	ResourceTypeAppInfos                     ResourceType = "appInfos"
+	ResourceTypeAnalyticsReportRequests      ResourceType = "analyticsReportRequests"
+	ResourceTypeAnalyticsReports             ResourceType = "analyticsReports"
+	ResourceTypeAnalyticsReportInstances     ResourceType = "analyticsReportInstances"
+	ResourceTypeAnalyticsReportSegments      ResourceType = "analyticsReportSegments"
 )
 
 // Resource is a generic ASC API resource wrapper.
@@ -1297,6 +1301,54 @@ func (c *Client) do(ctx context.Context, method, path string, body io.Reader) ([
 	return io.ReadAll(resp.Body)
 }
 
+func (c *Client) doStream(ctx context.Context, method, path string, body io.Reader, accept string) (*http.Response, error) {
+	req, err := c.newRequest(ctx, method, path, body)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(accept) != "" {
+		req.Header.Set("Accept", accept)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err := ParseError(respBody); err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
+	}
+	return resp, nil
+}
+
+func (c *Client) doStreamNoAuth(ctx context.Context, method, rawURL, accept string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, method, rawURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	if strings.TrimSpace(accept) != "" {
+		req.Header.Set("Accept", accept)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err := ParseError(respBody); err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("API request failed with status %d", resp.StatusCode)
+	}
+	return resp, nil
+}
+
 func buildReviewQuery(opts []ReviewOption) string {
 	query := &reviewQuery{}
 	for _, opt := range opts {
@@ -2319,6 +2371,18 @@ func PrintMarkdown(data interface{}) error {
 		return printLocalizationUploadResultMarkdown(v)
 	case *BuildUploadResult:
 		return printBuildUploadResultMarkdown(v)
+	case *SalesReportResult:
+		return printSalesReportResultMarkdown(v)
+	case *AnalyticsReportRequestResult:
+		return printAnalyticsReportRequestResultMarkdown(v)
+	case *AnalyticsReportRequestsResponse:
+		return printAnalyticsReportRequestsMarkdown(v)
+	case *AnalyticsReportRequestResponse:
+		return printAnalyticsReportRequestsMarkdown(&AnalyticsReportRequestsResponse{Data: []AnalyticsReportRequestResource{v.Data}, Links: v.Links})
+	case *AnalyticsReportDownloadResult:
+		return printAnalyticsReportDownloadResultMarkdown(v)
+	case *AnalyticsReportGetResult:
+		return printAnalyticsReportGetResultMarkdown(v)
 	case *AppStoreVersionSubmissionResult:
 		return printAppStoreVersionSubmissionMarkdown(v)
 	case *AppStoreVersionSubmissionCreateResult:
@@ -2375,6 +2439,18 @@ func PrintTable(data interface{}) error {
 		return printLocalizationUploadResultTable(v)
 	case *BuildUploadResult:
 		return printBuildUploadResultTable(v)
+	case *SalesReportResult:
+		return printSalesReportResultTable(v)
+	case *AnalyticsReportRequestResult:
+		return printAnalyticsReportRequestResultTable(v)
+	case *AnalyticsReportRequestsResponse:
+		return printAnalyticsReportRequestsTable(v)
+	case *AnalyticsReportRequestResponse:
+		return printAnalyticsReportRequestsTable(&AnalyticsReportRequestsResponse{Data: []AnalyticsReportRequestResource{v.Data}, Links: v.Links})
+	case *AnalyticsReportDownloadResult:
+		return printAnalyticsReportDownloadResultTable(v)
+	case *AnalyticsReportGetResult:
+		return printAnalyticsReportGetResultTable(v)
 	case *AppStoreVersionSubmissionResult:
 		return printAppStoreVersionSubmissionTable(v)
 	case *AppStoreVersionSubmissionCreateResult:

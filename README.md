@@ -119,6 +119,28 @@ asc reviews --app "123456789" --sort -createdDate --limit 5
 asc reviews --next "<links.next>"
 ```
 
+### Analytics & Sales
+
+```bash
+# Download daily sales summary (writes .tsv.gz)
+asc analytics sales --vendor "12345678" --type SALES --subtype SUMMARY --frequency DAILY --date "2024-01-20"
+
+# Download and decompress
+asc analytics sales --vendor "12345678" --type SALES --subtype SUMMARY --frequency DAILY --date "2024-01-20" --decompress
+
+# Create analytics report request
+asc analytics request --app "123456789" --access-type ONGOING
+
+# List analytics report requests
+asc analytics requests --app "123456789"
+
+# Get analytics reports with instances
+asc analytics get --request-id "REQUEST_ID"
+
+# Download analytics report data
+asc analytics download --request-id "REQUEST_ID" --instance-id "INSTANCE_ID"
+```
+
 ### Apps & Builds
 
 ```bash
