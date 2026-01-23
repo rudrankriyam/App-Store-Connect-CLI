@@ -593,13 +593,7 @@ type RelationshipList struct {
 
 // RelationshipRequest represents a relationship list payload.
 type RelationshipRequest struct {
-	Data []RelationshipData `json:"data"`
-}
-
-// RelationshipData represents data in a relationship payload.
-type RelationshipData struct {
-	Type ResourceType `json:"type"`
-	ID   string       `json:"id"`
+	Data []ResourceData `json:"data"`
 }
 
 // ResourceData represents the data portion of a resource.
@@ -2520,10 +2514,10 @@ func (c *Client) DeleteBetaGroup(ctx context.Context, groupID string) error {
 func (c *Client) AddBetaTestersToGroup(ctx context.Context, groupID string, testerIDs []string) error {
 	testerIDs = normalizeList(testerIDs)
 	payload := RelationshipRequest{
-		Data: make([]RelationshipData, 0, len(testerIDs)),
+		Data: make([]ResourceData, 0, len(testerIDs)),
 	}
 	for _, testerID := range testerIDs {
-		payload.Data = append(payload.Data, RelationshipData{
+		payload.Data = append(payload.Data, ResourceData{
 			Type: ResourceTypeBetaTesters,
 			ID:   testerID,
 		})
@@ -2543,10 +2537,10 @@ func (c *Client) AddBetaTestersToGroup(ctx context.Context, groupID string, test
 func (c *Client) RemoveBetaTestersFromGroup(ctx context.Context, groupID string, testerIDs []string) error {
 	testerIDs = normalizeList(testerIDs)
 	payload := RelationshipRequest{
-		Data: make([]RelationshipData, 0, len(testerIDs)),
+		Data: make([]ResourceData, 0, len(testerIDs)),
 	}
 	for _, testerID := range testerIDs {
-		payload.Data = append(payload.Data, RelationshipData{
+		payload.Data = append(payload.Data, ResourceData{
 			Type: ResourceTypeBetaTesters,
 			ID:   testerID,
 		})
@@ -3067,10 +3061,10 @@ func (c *Client) ExpireBuild(ctx context.Context, buildID string) (*BuildRespons
 // AddBetaGroupsToBuild adds beta groups to a build for TestFlight distribution.
 func (c *Client) AddBetaGroupsToBuild(ctx context.Context, buildID string, groupIDs []string) error {
 	payload := RelationshipRequest{
-		Data: make([]RelationshipData, len(groupIDs)),
+		Data: make([]ResourceData, len(groupIDs)),
 	}
 	for i, id := range groupIDs {
-		payload.Data[i] = RelationshipData{
+		payload.Data[i] = ResourceData{
 			Type: ResourceTypeBetaGroups,
 			ID:   id,
 		}
@@ -3091,10 +3085,10 @@ func (c *Client) AddBetaGroupsToBuild(ctx context.Context, buildID string, group
 // RemoveBetaGroupsFromBuild removes beta groups from a build.
 func (c *Client) RemoveBetaGroupsFromBuild(ctx context.Context, buildID string, groupIDs []string) error {
 	payload := RelationshipRequest{
-		Data: make([]RelationshipData, len(groupIDs)),
+		Data: make([]ResourceData, len(groupIDs)),
 	}
 	for i, id := range groupIDs {
-		payload.Data[i] = RelationshipData{
+		payload.Data[i] = ResourceData{
 			Type: ResourceTypeBetaGroups,
 			ID:   id,
 		}

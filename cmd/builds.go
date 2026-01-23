@@ -39,7 +39,7 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			groupIDs := parseCommaSeparatedIDs(*groups)
+			groupIDs := splitCSV(*groups)
 			if len(groupIDs) == 0 {
 				fmt.Fprintln(os.Stderr, "Error: --group is required")
 				return flag.ErrHelp
@@ -96,7 +96,7 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			groupIDs := parseCommaSeparatedIDs(*groups)
+			groupIDs := splitCSV(*groups)
 			if len(groupIDs) == 0 {
 				fmt.Fprintln(os.Stderr, "Error: --group is required")
 				return flag.ErrHelp

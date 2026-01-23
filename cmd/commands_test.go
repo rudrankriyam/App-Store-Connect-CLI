@@ -450,7 +450,7 @@ func TestTestFlightAppsValidationErrors(t *testing.T) {
 	}
 }
 
-func TestParseCommaSeparatedIDs(t *testing.T) {
+func TestSplitCSV(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -480,7 +480,7 @@ func TestParseCommaSeparatedIDs(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := parseCommaSeparatedIDs(test.input)
+			got := splitCSV(test.input)
 			if len(got) != len(test.want) {
 				t.Fatalf("expected %d ids, got %d", len(test.want), len(got))
 			}

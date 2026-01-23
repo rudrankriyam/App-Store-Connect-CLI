@@ -403,7 +403,7 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			testerIDs := parseCommaSeparatedIDs(*tester)
+			testerIDs := splitCSV(*tester)
 			if len(testerIDs) == 0 {
 				fmt.Fprintln(os.Stderr, "Error: --tester is required")
 				return flag.ErrHelp
@@ -452,7 +452,7 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			testerIDs := parseCommaSeparatedIDs(*tester)
+			testerIDs := splitCSV(*tester)
 			if len(testerIDs) == 0 {
 				fmt.Fprintln(os.Stderr, "Error: --tester is required")
 				return flag.ErrHelp
@@ -803,7 +803,7 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			groupIDs := parseCommaSeparatedIDs(*groups)
+			groupIDs := splitCSV(*groups)
 			if len(groupIDs) == 0 {
 				fmt.Fprintln(os.Stderr, "Error: --group is required")
 				return flag.ErrHelp
@@ -864,7 +864,7 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			groupIDs := parseCommaSeparatedIDs(*groups)
+			groupIDs := splitCSV(*groups)
 			if len(groupIDs) == 0 {
 				fmt.Fprintln(os.Stderr, "Error: --group is required")
 				return flag.ErrHelp
@@ -1029,13 +1029,3 @@ func findBetaTesterIDByEmail(ctx context.Context, client *asc.Client, appID, ema
 	return testers.Data[0].ID, nil
 }
 
-func parseCommaSeparatedIDs(input string) []string {
-	parts := strings.Split(input, ",")
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if trimmed := strings.TrimSpace(part); trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-	return result
-}
