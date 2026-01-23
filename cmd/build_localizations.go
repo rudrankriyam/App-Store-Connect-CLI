@@ -5,15 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
 
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/asc"
 )
-
-var buildLocalizationLocaleRegex = regexp.MustCompile(`^[a-zA-Z]{2,3}(-[a-zA-Z0-9]+)*$`)
 
 // BuildLocalizationsCommand returns the build-localizations command group.
 func BuildLocalizationsCommand() *ffcli.Command {
@@ -86,7 +83,8 @@ Examples:
 			}
 
 			build := strings.TrimSpace(*buildID)
-			if build == "" {
+			nextURL := strings.TrimSpace(*next)
+			if build == "" && nextURL == "" {
 				fmt.Fprintln(os.Stderr, "Error: --build is required")
 				return flag.ErrHelp
 			}
@@ -104,9 +102,12 @@ Examples:
 			requestCtx, cancel := contextWithTimeout(ctx)
 			defer cancel()
 
-			versionID, err := resolveBuildAppStoreVersion(requestCtx, client, build)
-			if err != nil {
-				return fmt.Errorf("build-localizations list: %w", err)
+			versionID := ""
+			if build != "" {
+				versionID, err = resolveBuildAppStoreVersion(requestCtx, client, build)
+				if err != nil {
+					return fmt.Errorf("build-localizations list: %w", err)
+				}
 			}
 
 			opts := []asc.AppStoreVersionLocalizationsOption{
@@ -384,7 +385,7 @@ func validateBuildLocalizationLocales(locales []string) error {
 }
 
 func validateBuildLocalizationLocale(locale string) error {
-	if locale == "" || !buildLocalizationLocaleRegex.MatchString(locale) {
+	if !isValidLocale(locale) {
 		return fmt.Errorf("invalid locale %q: must match pattern like en or en-US", locale)
 	}
 	return nil
