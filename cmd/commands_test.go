@@ -393,6 +393,7 @@ func TestTestFlightAppsValidationErrors(t *testing.T) {
 	t.Setenv("ASC_KEY_ID", "")
 	t.Setenv("ASC_ISSUER_ID", "")
 	t.Setenv("ASC_PRIVATE_KEY_PATH", "")
+	t.Setenv("ASC_APP_ID", "")
 
 	tests := []struct {
 		name     string

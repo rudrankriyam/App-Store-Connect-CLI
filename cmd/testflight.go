@@ -156,7 +156,7 @@ Examples:
 func TestFlightAppsGetCommand() *ffcli.Command {
 	fs := flag.NewFlagSet("get", flag.ExitOnError)
 
-	appID := fs.String("app", "", "App Store Connect app ID (required)")
+	appID := fs.String("app", "", "App Store Connect app ID (or ASC_APP_ID env)")
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
 
@@ -171,9 +171,9 @@ Examples:
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
-			resolvedAppID := strings.TrimSpace(*appID)
+			resolvedAppID := strings.TrimSpace(resolveAppID(*appID))
 			if resolvedAppID == "" {
-				fmt.Fprintln(os.Stderr, "Error: --app is required")
+				fmt.Fprintf(os.Stderr, "Error: --app is required (or set ASC_APP_ID)\n\n")
 				return flag.ErrHelp
 			}
 
