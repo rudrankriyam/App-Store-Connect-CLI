@@ -356,6 +356,9 @@ func TestBuildAppsQuery(t *testing.T) {
 		WithAppsLimit(10),
 		WithAppsNextURL("https://api.appstoreconnect.apple.com/v1/apps?cursor=abc123"),
 		WithAppsSort("-name"),
+		WithAppsBundleIDs([]string{"com.example.app", " ", "com.example.other"}),
+		WithAppsNames([]string{"Demo", " "}),
+		WithAppsSKUs([]string{"SKU1", "SKU2"}),
 	}
 	for _, opt := range opts {
 		opt(query)
@@ -369,6 +372,15 @@ func TestBuildAppsQuery(t *testing.T) {
 	}
 	if query.sort != "-name" {
 		t.Fatalf("expected sort=-name, got %q", query.sort)
+	}
+	if len(query.bundleIDs) != 2 || query.bundleIDs[0] != "com.example.app" || query.bundleIDs[1] != "com.example.other" {
+		t.Fatalf("expected bundleIDs to be normalized, got %v", query.bundleIDs)
+	}
+	if len(query.names) != 1 || query.names[0] != "Demo" {
+		t.Fatalf("expected names to be normalized, got %v", query.names)
+	}
+	if len(query.skus) != 2 || query.skus[0] != "SKU1" || query.skus[1] != "SKU2" {
+		t.Fatalf("expected skus to be set, got %v", query.skus)
 	}
 }
 

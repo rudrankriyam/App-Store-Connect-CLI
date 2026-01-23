@@ -389,6 +389,67 @@ func TestBetaManagementValidationErrors(t *testing.T) {
 	}
 }
 
+func TestTestFlightAppsValidationErrors(t *testing.T) {
+	t.Setenv("ASC_KEY_ID", "")
+	t.Setenv("ASC_ISSUER_ID", "")
+	t.Setenv("ASC_PRIVATE_KEY_PATH", "")
+
+	tests := []struct {
+		name     string
+		args     []string
+		wantErr  string
+		wantHelp bool
+	}{
+		{
+			name:     "testflight apps list missing auth",
+			args:     []string{"testflight", "apps", "list"},
+			wantErr:  "missing authentication",
+			wantHelp: false,
+		},
+		{
+			name:     "testflight apps get missing id",
+			args:     []string{"testflight", "apps", "get"},
+			wantErr:  "--app is required",
+			wantHelp: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := RootCommand("1.2.3")
+			root.FlagSet.SetOutput(io.Discard)
+
+			stdout, stderr := captureOutput(t, func() {
+				if err := root.Parse(test.args); err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
+				err := root.Run(context.Background())
+				if test.wantHelp {
+					if !errors.Is(err, flag.ErrHelp) {
+						t.Fatalf("expected ErrHelp, got %v", err)
+					}
+				} else {
+					if err == nil {
+						t.Fatal("expected error, got nil")
+					}
+					if !strings.Contains(err.Error(), test.wantErr) {
+						t.Fatalf("expected error containing %q, got %v", test.wantErr, err)
+					}
+				}
+			})
+
+			if test.wantHelp {
+				if stdout != "" {
+					t.Fatalf("expected empty stdout, got %q", stdout)
+				}
+				if !strings.Contains(stderr, test.wantErr) {
+					t.Fatalf("expected error %q, got %q", test.wantErr, stderr)
+				}
+			}
+		})
+	}
+}
+
 func TestParseCommaSeparatedIDs(t *testing.T) {
 	tests := []struct {
 		name  string

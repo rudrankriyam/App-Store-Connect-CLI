@@ -909,6 +909,7 @@ func RootCommand(version string) *ffcli.Command {
 			ReviewsCommand(),
 			AnalyticsCommand(),
 			AppsCommand(),
+			TestFlightCommand(),
 			BuildsCommand(),
 			VersionsCommand(),
 			PreReleaseVersionsCommand(),
@@ -1002,10 +1003,6 @@ func contextWithTimeout(ctx context.Context) (context.Context, context.CancelFun
 		ctx = context.Background()
 	}
 	return context.WithTimeout(ctx, asc.ResolveTimeout())
-}
-
-func parseCommaSeparatedIDs(value string) []string {
-	return splitCSV(value)
 }
 
 func splitCSV(value string) []string {

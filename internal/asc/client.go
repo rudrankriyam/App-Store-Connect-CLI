@@ -302,6 +302,9 @@ type ReviewsResponse = Response[ReviewAttributes]
 // AppsResponse is the response from apps endpoint.
 type AppsResponse = Response[AppAttributes]
 
+// AppResponse is the response from app detail endpoint.
+type AppResponse = SingleResponse[AppAttributes]
+
 // BuildsResponse is the response from builds endpoint.
 type BuildsResponse = Response[BuildAttributes]
 
@@ -395,7 +398,10 @@ type reviewQuery struct {
 
 type appsQuery struct {
 	listQuery
-	sort string
+	sort      string
+	bundleIDs []string
+	names     []string
+	skus      []string
 }
 
 type buildsQuery struct {
@@ -600,11 +606,6 @@ type RelationshipData struct {
 type ResourceData struct {
 	Type ResourceType `json:"type"`
 	ID   string       `json:"id"`
-}
-
-// RelationshipRequest represents a relationship update request payload.
-type RelationshipRequest struct {
-	Data []ResourceData `json:"data"`
 }
 
 // BuildUploadAttributes describes a build upload resource.
@@ -1303,6 +1304,27 @@ func WithAppsSort(sort string) AppsOption {
 	}
 }
 
+// WithAppsBundleIDs filters apps by bundle ID(s).
+func WithAppsBundleIDs(bundleIDs []string) AppsOption {
+	return func(q *appsQuery) {
+		q.bundleIDs = normalizeList(bundleIDs)
+	}
+}
+
+// WithAppsNames filters apps by name(s).
+func WithAppsNames(names []string) AppsOption {
+	return func(q *appsQuery) {
+		q.names = normalizeList(names)
+	}
+}
+
+// WithAppsSKUs filters apps by SKU(s).
+func WithAppsSKUs(skus []string) AppsOption {
+	return func(q *appsQuery) {
+		q.skus = normalizeList(skus)
+	}
+}
+
 // WithBuildsLimit sets the max number of builds to return.
 func WithBuildsLimit(limit int) BuildsOption {
 	return func(q *buildsQuery) {
@@ -1847,6 +1869,18 @@ func buildReviewQuery(opts []ReviewOption) string {
 	return values.Encode()
 }
 
+func buildAppsQuery(query *appsQuery) string {
+	values := url.Values{}
+	addCSV(values, "filter[bundleId]", query.bundleIDs)
+	addCSV(values, "filter[name]", query.names)
+	addCSV(values, "filter[sku]", query.skus)
+	if query.sort != "" {
+		values.Set("sort", query.sort)
+	}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
 func buildFeedbackQuery(query *feedbackQuery) string {
 	values := url.Values{}
 	if query.includeScreenshots {
@@ -2124,17 +2158,8 @@ func (c *Client) GetApps(ctx context.Context, opts ...AppsOption) (*AppsResponse
 			return nil, fmt.Errorf("apps: %w", err)
 		}
 		path = query.nextURL
-	} else {
-		values := url.Values{}
-		if query.sort != "" {
-			values.Set("sort", query.sort)
-		}
-		if query.limit > 0 {
-			values.Set("limit", strconv.Itoa(query.limit))
-		}
-		if queryString := values.Encode(); queryString != "" {
-			path += "?" + queryString
-		}
+	} else if queryString := buildAppsQuery(query); queryString != "" {
+		path += "?" + queryString
 	}
 
 	data, err := c.do(ctx, "GET", path, nil)
@@ -2143,6 +2168,23 @@ func (c *Client) GetApps(ctx context.Context, opts ...AppsOption) (*AppsResponse
 	}
 
 	var response AppsResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// GetApp retrieves a single app by ID.
+func (c *Client) GetApp(ctx context.Context, appID string) (*AppResponse, error) {
+	appID = strings.TrimSpace(appID)
+	path := fmt.Sprintf("/v1/apps/%s", appID)
+	data, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response AppResponse
 	if err := json.Unmarshal(data, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
@@ -2978,10 +3020,10 @@ func (c *Client) ExpireBuild(ctx context.Context, buildID string) (*BuildRespons
 // AddBetaGroupsToBuild adds beta groups to a build for TestFlight distribution.
 func (c *Client) AddBetaGroupsToBuild(ctx context.Context, buildID string, groupIDs []string) error {
 	payload := RelationshipRequest{
-		Data: make([]ResourceData, len(groupIDs)),
+		Data: make([]RelationshipData, len(groupIDs)),
 	}
 	for i, id := range groupIDs {
-		payload.Data[i] = ResourceData{
+		payload.Data[i] = RelationshipData{
 			Type: ResourceTypeBetaGroups,
 			ID:   id,
 		}
@@ -3002,10 +3044,10 @@ func (c *Client) AddBetaGroupsToBuild(ctx context.Context, buildID string, group
 // RemoveBetaGroupsFromBuild removes beta groups from a build.
 func (c *Client) RemoveBetaGroupsFromBuild(ctx context.Context, buildID string, groupIDs []string) error {
 	payload := RelationshipRequest{
-		Data: make([]ResourceData, len(groupIDs)),
+		Data: make([]RelationshipData, len(groupIDs)),
 	}
 	for i, id := range groupIDs {
-		payload.Data[i] = ResourceData{
+		payload.Data[i] = RelationshipData{
 			Type: ResourceTypeBetaGroups,
 			ID:   id,
 		}
@@ -3356,6 +3398,8 @@ func PrintMarkdown(data interface{}) error {
 		return printReviewsMarkdown(v)
 	case *AppsResponse:
 		return printAppsMarkdown(v)
+	case *AppResponse:
+		return printAppsMarkdown(&AppsResponse{Data: []Resource[AppAttributes]{v.Data}})
 	case *BuildsResponse:
 		return printBuildsMarkdown(v)
 	case *AppStoreVersionsResponse:
@@ -3450,6 +3494,8 @@ func PrintTable(data interface{}) error {
 		return printReviewsTable(v)
 	case *AppsResponse:
 		return printAppsTable(v)
+	case *AppResponse:
+		return printAppsTable(&AppsResponse{Data: []Resource[AppAttributes]{v.Data}})
 	case *BuildsResponse:
 		return printBuildsTable(v)
 	case *AppStoreVersionsResponse:

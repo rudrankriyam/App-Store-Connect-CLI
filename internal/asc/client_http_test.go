@@ -99,6 +99,38 @@ func TestGetApps_UsesNextURL(t *testing.T) {
 	}
 }
 
+func TestGetApps_WithFilters(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"apps","id":"1","attributes":{"name":"Demo","bundleId":"com.example.demo","sku":"SKU1"}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/apps" {
+			t.Fatalf("expected path /v1/apps, got %s", req.URL.Path)
+		}
+		values := req.URL.Query()
+		if values.Get("filter[bundleId]") != "com.example.demo,com.example.other" {
+			t.Fatalf("expected filter[bundleId] to be set, got %q", values.Get("filter[bundleId]"))
+		}
+		if values.Get("filter[name]") != "Demo App" {
+			t.Fatalf("expected filter[name]=Demo App, got %q", values.Get("filter[name]"))
+		}
+		if values.Get("filter[sku]") != "SKU1,SKU2" {
+			t.Fatalf("expected filter[sku]=SKU1,SKU2, got %q", values.Get("filter[sku]"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetApps(
+		context.Background(),
+		WithAppsBundleIDs([]string{"com.example.demo", "com.example.other"}),
+		WithAppsNames([]string{"Demo App"}),
+		WithAppsSKUs([]string{"SKU1", "SKU2"}),
+	); err != nil {
+		t.Fatalf("GetApps() error: %v", err)
+	}
+}
+
 func TestGetBuilds_WithSortAndLimit(t *testing.T) {
 	response := jsonResponse(http.StatusOK, `{"data":[{"type":"builds","id":"1","attributes":{"version":"1.0","uploadedDate":"2026-01-20T00:00:00Z"}}]}`)
 	client := newTestClient(t, func(req *http.Request) {
@@ -553,6 +585,23 @@ func TestGetBuild_ByID(t *testing.T) {
 
 	if _, err := client.GetBuild(context.Background(), "123"); err != nil {
 		t.Fatalf("GetBuild() error: %v", err)
+	}
+}
+
+func TestGetApp_ByID(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"apps","id":"app-1","attributes":{"name":"Demo","bundleId":"com.example.demo","sku":"SKU1"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/apps/app-1" {
+			t.Fatalf("expected path /v1/apps/app-1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetApp(context.Background(), "app-1"); err != nil {
+		t.Fatalf("GetApp() error: %v", err)
 	}
 }
 
