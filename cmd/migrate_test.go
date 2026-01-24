@@ -235,3 +235,172 @@ func TestReadFastlaneMetadata_EmptyDirectory(t *testing.T) {
 		t.Errorf("expected 0 localizations, got %d", len(locs))
 	}
 }
+
+func TestValidateVersionLocalization_NoIssues(t *testing.T) {
+	loc := FastlaneLocalization{
+		Locale:          "en-US",
+		Description:     "A valid description",
+		Keywords:        "app, utility",
+		WhatsNew:        "Bug fixes",
+		PromotionalText: "Download now!",
+	}
+
+	issues := validateVersionLocalization(loc)
+	// Should only have no errors (might have empty field warnings filtered)
+	for _, issue := range issues {
+		if issue.Severity == "error" {
+			t.Errorf("unexpected error: %s - %s", issue.Field, issue.Message)
+		}
+	}
+}
+
+func TestValidateVersionLocalization_DescriptionTooLong(t *testing.T) {
+	// Create a description that exceeds 4000 characters
+	longDesc := make([]byte, 4001)
+	for i := range longDesc {
+		longDesc[i] = 'a'
+	}
+
+	loc := FastlaneLocalization{
+		Locale:      "en-US",
+		Description: string(longDesc),
+	}
+
+	issues := validateVersionLocalization(loc)
+	foundError := false
+	for _, issue := range issues {
+		if issue.Field == "description" && issue.Severity == "error" {
+			foundError = true
+			if issue.Length != 4001 {
+				t.Errorf("expected length 4001, got %d", issue.Length)
+			}
+			if issue.Limit != 4000 {
+				t.Errorf("expected limit 4000, got %d", issue.Limit)
+			}
+		}
+	}
+	if !foundError {
+		t.Error("expected error for description exceeding limit")
+	}
+}
+
+func TestValidateVersionLocalization_KeywordsTooLong(t *testing.T) {
+	// Create keywords that exceed 100 characters
+	longKeywords := make([]byte, 101)
+	for i := range longKeywords {
+		longKeywords[i] = 'k'
+	}
+
+	loc := FastlaneLocalization{
+		Locale:      "en-US",
+		Description: "Valid description",
+		Keywords:    string(longKeywords),
+	}
+
+	issues := validateVersionLocalization(loc)
+	foundError := false
+	for _, issue := range issues {
+		if issue.Field == "keywords" && issue.Severity == "error" {
+			foundError = true
+		}
+	}
+	if !foundError {
+		t.Error("expected error for keywords exceeding limit")
+	}
+}
+
+func TestValidateVersionLocalization_PromotionalTextTooLong(t *testing.T) {
+	// Create promotional text that exceeds 170 characters
+	longPromo := make([]byte, 171)
+	for i := range longPromo {
+		longPromo[i] = 'p'
+	}
+
+	loc := FastlaneLocalization{
+		Locale:          "en-US",
+		Description:     "Valid description",
+		PromotionalText: string(longPromo),
+	}
+
+	issues := validateVersionLocalization(loc)
+	foundError := false
+	for _, issue := range issues {
+		if issue.Field == "promotionalText" && issue.Severity == "error" {
+			foundError = true
+		}
+	}
+	if !foundError {
+		t.Error("expected error for promotional text exceeding limit")
+	}
+}
+
+func TestValidateVersionLocalization_EmptyDescriptionWarning(t *testing.T) {
+	loc := FastlaneLocalization{
+		Locale:   "en-US",
+		Keywords: "app, utility",
+	}
+
+	issues := validateVersionLocalization(loc)
+	foundWarning := false
+	for _, issue := range issues {
+		if issue.Field == "description" && issue.Severity == "warning" {
+			foundWarning = true
+		}
+	}
+	if !foundWarning {
+		t.Error("expected warning for empty description")
+	}
+}
+
+func TestValidateAppInfoLocalization_NoIssues(t *testing.T) {
+	loc := AppInfoFastlaneLocalization{
+		Locale:   "en-US",
+		Name:     "My App",
+		Subtitle: "A great app",
+	}
+
+	issues := validateAppInfoLocalization(loc)
+	if len(issues) != 0 {
+		t.Errorf("expected no issues, got %d", len(issues))
+	}
+}
+
+func TestValidateAppInfoLocalization_NameTooLong(t *testing.T) {
+	loc := AppInfoFastlaneLocalization{
+		Locale: "en-US",
+		Name:   "This name is way too long for the App Store limit of 30 characters",
+	}
+
+	issues := validateAppInfoLocalization(loc)
+	foundError := false
+	for _, issue := range issues {
+		if issue.Field == "name" && issue.Severity == "error" {
+			foundError = true
+			if issue.Limit != 30 {
+				t.Errorf("expected limit 30, got %d", issue.Limit)
+			}
+		}
+	}
+	if !foundError {
+		t.Error("expected error for name exceeding limit")
+	}
+}
+
+func TestValidateAppInfoLocalization_SubtitleTooLong(t *testing.T) {
+	loc := AppInfoFastlaneLocalization{
+		Locale:   "en-US",
+		Name:     "My App",
+		Subtitle: "This subtitle is way too long for the App Store limit",
+	}
+
+	issues := validateAppInfoLocalization(loc)
+	foundError := false
+	for _, issue := range issues {
+		if issue.Field == "subtitle" && issue.Severity == "error" {
+			foundError = true
+		}
+	}
+	if !foundError {
+		t.Error("expected error for subtitle exceeding limit")
+	}
+}

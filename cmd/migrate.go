@@ -33,6 +33,7 @@ Examples:
 		Subcommands: []*ffcli.Command{
 			MigrateImportCommand(),
 			MigrateExportCommand(),
+			MigrateValidateCommand(),
 		},
 		Exec: func(ctx context.Context, args []string) error {
 			return flag.ErrHelp
@@ -517,6 +518,13 @@ func printMigrateOutput(data interface{}, format string, pretty bool) error {
 		if format == "table" {
 			return printMigrateExportResultTable(v)
 		}
+	case *MigrateValidateResult:
+		if format == "markdown" || format == "md" {
+			return printMigrateValidateResultMarkdown(v)
+		}
+		if format == "table" {
+			return printMigrateValidateResultTable(v)
+		}
 	default:
 		return asc.PrintJSON(data)
 	}
@@ -541,4 +549,213 @@ func countNonEmptyFields(loc FastlaneLocalization) int {
 		}
 	}
 	return count
+}
+
+// App Store metadata character limits
+const (
+	limitDescription     = 4000
+	limitKeywords        = 100
+	limitWhatsNew        = 4000
+	limitPromotionalText = 170
+	limitName            = 30
+	limitSubtitle        = 30
+)
+
+// ValidationIssue represents a validation error or warning.
+type ValidationIssue struct {
+	Locale   string `json:"locale"`
+	Field    string `json:"field"`
+	Severity string `json:"severity"` // "error" or "warning"
+	Message  string `json:"message"`
+	Length   int    `json:"length,omitempty"`
+	Limit    int    `json:"limit,omitempty"`
+}
+
+// MigrateValidateResult is the result of a migrate validate operation.
+type MigrateValidateResult struct {
+	FastlaneDir string            `json:"fastlaneDir"`
+	Locales     []string          `json:"locales"`
+	Issues      []ValidationIssue `json:"issues"`
+	ErrorCount  int               `json:"errorCount"`
+	WarnCount   int               `json:"warnCount"`
+	Valid       bool              `json:"valid"`
+}
+
+// MigrateValidateCommand returns the migrate validate subcommand.
+func MigrateValidateCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("migrate validate", flag.ExitOnError)
+
+	fastlaneDir := fs.String("fastlane-dir", "", "Path to fastlane directory (required)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "validate",
+		ShortUsage: "asc migrate validate [flags]",
+		ShortHelp:  "Validate fastlane metadata without uploading.",
+		LongHelp: `Validate fastlane metadata without making any API calls.
+
+Checks character limits for App Store Connect metadata:
+  - Description: 4000 characters
+  - Keywords: 100 characters
+  - What's New (release notes): 4000 characters
+  - Promotional Text: 170 characters
+  - Name: 30 characters
+  - Subtitle: 30 characters
+
+Examples:
+  asc migrate validate --fastlane-dir ./fastlane
+  asc migrate validate --fastlane-dir ./fastlane --output table`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if strings.TrimSpace(*fastlaneDir) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --fastlane-dir is required")
+				return flag.ErrHelp
+			}
+
+			// Check if directory exists
+			metadataDir := filepath.Join(*fastlaneDir, "metadata")
+			if _, err := os.Stat(metadataDir); os.IsNotExist(err) {
+				return fmt.Errorf("migrate validate: metadata directory not found: %s", metadataDir)
+			}
+
+			// Read metadata from fastlane structure
+			localizations, err := readFastlaneMetadata(metadataDir)
+			if err != nil {
+				return fmt.Errorf("migrate validate: %w", err)
+			}
+
+			// Read App Info metadata (name, subtitle)
+			appInfoLocs, err := readFastlaneAppInfoMetadata(metadataDir)
+			if err != nil {
+				return fmt.Errorf("migrate validate: %w", err)
+			}
+
+			// Validate and collect issues
+			var issues []ValidationIssue
+			var locales []string
+
+			for _, loc := range localizations {
+				locales = append(locales, loc.Locale)
+				issues = append(issues, validateVersionLocalization(loc)...)
+			}
+
+			for _, loc := range appInfoLocs {
+				issues = append(issues, validateAppInfoLocalization(loc)...)
+			}
+
+			// Count errors and warnings
+			errorCount := 0
+			warnCount := 0
+			for _, issue := range issues {
+				if issue.Severity == "error" {
+					errorCount++
+				} else {
+					warnCount++
+				}
+			}
+
+			result := &MigrateValidateResult{
+				FastlaneDir: *fastlaneDir,
+				Locales:     locales,
+				Issues:      issues,
+				ErrorCount:  errorCount,
+				WarnCount:   warnCount,
+				Valid:       errorCount == 0,
+			}
+
+			return printMigrateOutput(result, *output, *pretty)
+		},
+	}
+}
+
+// validateVersionLocalization checks version-level metadata for issues.
+func validateVersionLocalization(loc FastlaneLocalization) []ValidationIssue {
+	var issues []ValidationIssue
+
+	if len(loc.Description) > limitDescription {
+		issues = append(issues, ValidationIssue{
+			Locale:   loc.Locale,
+			Field:    "description",
+			Severity: "error",
+			Message:  fmt.Sprintf("exceeds %d character limit", limitDescription),
+			Length:   len(loc.Description),
+			Limit:    limitDescription,
+		})
+	}
+
+	if len(loc.Keywords) > limitKeywords {
+		issues = append(issues, ValidationIssue{
+			Locale:   loc.Locale,
+			Field:    "keywords",
+			Severity: "error",
+			Message:  fmt.Sprintf("exceeds %d character limit", limitKeywords),
+			Length:   len(loc.Keywords),
+			Limit:    limitKeywords,
+		})
+	}
+
+	if len(loc.WhatsNew) > limitWhatsNew {
+		issues = append(issues, ValidationIssue{
+			Locale:   loc.Locale,
+			Field:    "whatsNew",
+			Severity: "error",
+			Message:  fmt.Sprintf("exceeds %d character limit", limitWhatsNew),
+			Length:   len(loc.WhatsNew),
+			Limit:    limitWhatsNew,
+		})
+	}
+
+	if len(loc.PromotionalText) > limitPromotionalText {
+		issues = append(issues, ValidationIssue{
+			Locale:   loc.Locale,
+			Field:    "promotionalText",
+			Severity: "error",
+			Message:  fmt.Sprintf("exceeds %d character limit", limitPromotionalText),
+			Length:   len(loc.PromotionalText),
+			Limit:    limitPromotionalText,
+		})
+	}
+
+	// Warn if description is empty (usually required)
+	if loc.Description == "" {
+		issues = append(issues, ValidationIssue{
+			Locale:   loc.Locale,
+			Field:    "description",
+			Severity: "warning",
+			Message:  "description is empty (usually required)",
+		})
+	}
+
+	return issues
+}
+
+// validateAppInfoLocalization checks app-level metadata for issues.
+func validateAppInfoLocalization(loc AppInfoFastlaneLocalization) []ValidationIssue {
+	var issues []ValidationIssue
+
+	if len(loc.Name) > limitName {
+		issues = append(issues, ValidationIssue{
+			Locale:   loc.Locale,
+			Field:    "name",
+			Severity: "error",
+			Message:  fmt.Sprintf("exceeds %d character limit", limitName),
+			Length:   len(loc.Name),
+			Limit:    limitName,
+		})
+	}
+
+	if len(loc.Subtitle) > limitSubtitle {
+		issues = append(issues, ValidationIssue{
+			Locale:   loc.Locale,
+			Field:    "subtitle",
+			Severity: "error",
+			Message:  fmt.Sprintf("exceeds %d character limit", limitSubtitle),
+			Length:   len(loc.Subtitle),
+			Limit:    limitSubtitle,
+		})
+	}
+
+	return issues
 }

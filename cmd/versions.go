@@ -53,6 +53,7 @@ func VersionsCommand() *ffcli.Command {
 			VersionsListCommand(),
 			VersionsGetCommand(),
 			VersionsCreateCommand(),
+			VersionsUpdateCommand(),
 			VersionsDeleteCommand(),
 			VersionsAttachBuildCommand(),
 			PhasedReleaseCommand(),
@@ -291,6 +292,82 @@ Examples:
 			resp, err := client.CreateAppStoreVersion(requestCtx, resolvedAppID, attrs)
 			if err != nil {
 				return fmt.Errorf("versions create: %w", err)
+			}
+
+			result := &asc.AppStoreVersionDetailResult{
+				ID:            resp.Data.ID,
+				VersionString: resp.Data.Attributes.VersionString,
+				Platform:      string(resp.Data.Attributes.Platform),
+				State:         resolveAppStoreVersionState(resp.Data.Attributes),
+			}
+
+			return printOutput(result, *output, *pretty)
+		},
+	}
+}
+
+func VersionsUpdateCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("versions update", flag.ExitOnError)
+
+	versionID := fs.String("version-id", "", "App Store version ID (required)")
+	copyright := fs.String("copyright", "", "Copyright text (e.g., '2026 My Company')")
+	releaseType := fs.String("release-type", "", "Release type: MANUAL, AFTER_APPROVAL, SCHEDULED")
+	earliestReleaseDate := fs.String("earliest-release-date", "", "Earliest release date (ISO 8601, e.g., 2026-02-01T08:00:00+00:00)")
+	versionString := fs.String("version", "", "Version string (e.g., 1.0.1)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "update",
+		ShortUsage: "asc versions update [flags]",
+		ShortHelp:  "Update an app store version.",
+		LongHelp: `Update an app store version.
+
+Examples:
+  asc versions update --version-id "VERSION_ID" --copyright "2026 My Company"
+  asc versions update --version-id "VERSION_ID" --release-type MANUAL
+  asc versions update --version-id "VERSION_ID" --release-type SCHEDULED --earliest-release-date "2026-02-01T08:00:00+00:00"
+  asc versions update --version-id "VERSION_ID" --version "1.0.1"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if strings.TrimSpace(*versionID) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --version-id is required")
+				return flag.ErrHelp
+			}
+
+			// Check that at least one update field is provided
+			if *copyright == "" && *releaseType == "" && *earliestReleaseDate == "" && *versionString == "" {
+				fmt.Fprintln(os.Stderr, "Error: at least one of --copyright, --release-type, --earliest-release-date, or --version is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("versions update: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			attrs := asc.AppStoreVersionUpdateAttributes{}
+			if *copyright != "" {
+				attrs.Copyright = copyright
+			}
+			if *releaseType != "" {
+				rt := strings.ToUpper(*releaseType)
+				attrs.ReleaseType = &rt
+			}
+			if *earliestReleaseDate != "" {
+				attrs.EarliestReleaseDate = earliestReleaseDate
+			}
+			if *versionString != "" {
+				attrs.VersionString = versionString
+			}
+
+			resp, err := client.UpdateAppStoreVersion(requestCtx, strings.TrimSpace(*versionID), attrs)
+			if err != nil {
+				return fmt.Errorf("versions update: %w", err)
 			}
 
 			result := &asc.AppStoreVersionDetailResult{

@@ -420,6 +420,17 @@ asc versions list --app "123456789" --paginate
 # Get version details
 asc versions get --version-id "VERSION_ID"
 
+# Create a new version
+asc versions create --app "123456789" --version "2.0.0"
+asc versions create --app "123456789" --version "2.0.0" --platform IOS --copyright "2026 My Company"
+
+# Update a version
+asc versions update --version-id "VERSION_ID" --copyright "2026 My Company"
+asc versions update --version-id "VERSION_ID" --release-type SCHEDULED --earliest-release-date "2026-02-01T08:00:00+00:00"
+
+# Delete a version (only PREPARE_FOR_SUBMISSION state)
+asc versions delete --version-id "VERSION_ID" --confirm
+
 # Attach a build to a version
 asc versions attach-build --version-id "VERSION_ID" --build "BUILD_ID"
 
@@ -463,6 +474,57 @@ asc localizations list --version "VERSION_ID" --paginate
 asc localizations download --version "VERSION_ID" --path "./localizations"
 asc localizations upload --version "VERSION_ID" --path "./localizations"
 ```
+
+### Categories
+
+```bash
+# List all App Store categories
+asc categories list
+
+# List with table output
+asc categories list --output table
+```
+
+### Migrate (Fastlane)
+
+Migrate metadata between App Store Connect and fastlane directory structure.
+
+```bash
+# Import metadata from fastlane to App Store Connect
+asc migrate import --app "APP_ID" --version-id "VERSION_ID" --fastlane-dir ./fastlane
+
+# Preview import without uploading (dry run)
+asc migrate import --app "APP_ID" --version-id "VERSION_ID" --fastlane-dir ./fastlane --dry-run
+
+# Export metadata from App Store Connect to fastlane format
+asc migrate export --app "APP_ID" --version-id "VERSION_ID" --output-dir ./fastlane
+
+# Validate fastlane metadata without uploading
+asc migrate validate --fastlane-dir ./fastlane
+asc migrate validate --fastlane-dir ./fastlane --output table
+```
+
+**Supported fastlane structure:**
+```
+fastlane/
+├── metadata/
+│   ├── en-US/
+│   │   ├── name.txt           (App Info - 30 chars max)
+│   │   ├── subtitle.txt       (App Info - 30 chars max)
+│   │   ├── description.txt    (Version - 4000 chars max)
+│   │   ├── keywords.txt       (Version - 100 chars max)
+│   │   ├── release_notes.txt  (Version - 4000 chars max)
+│   │   ├── promotional_text.txt (Version - 170 chars max)
+│   │   ├── support_url.txt    (Version)
+│   │   └── marketing_url.txt  (Version)
+│   └── de-DE/
+│       └── ...
+```
+
+Notes:
+- `migrate validate` checks character limits before import
+- `migrate import` creates new localizations or updates existing ones
+- `migrate export` creates the fastlane directory structure from current metadata
 
 ### Build Localizations
 

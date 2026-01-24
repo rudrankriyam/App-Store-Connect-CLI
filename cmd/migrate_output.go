@@ -140,3 +140,73 @@ func printMigrateExportResultTable(result *MigrateExportResult) error {
 	fmt.Printf("\nTotal Files: %d\n", result.TotalFiles)
 	return nil
 }
+
+func printMigrateValidateResultMarkdown(result *MigrateValidateResult) error {
+	fmt.Printf("**Fastlane Directory:** %s\n\n", result.FastlaneDir)
+
+	// Summary
+	if result.Valid {
+		fmt.Println("## ✓ Validation Passed")
+	} else {
+		fmt.Println("## ✗ Validation Failed")
+	}
+	fmt.Println()
+	fmt.Printf("- **Locales:** %d\n", len(result.Locales))
+	fmt.Printf("- **Errors:** %d\n", result.ErrorCount)
+	fmt.Printf("- **Warnings:** %d\n", result.WarnCount)
+
+	if len(result.Issues) > 0 {
+		fmt.Println()
+		fmt.Println("### Issues")
+		fmt.Println()
+		fmt.Println("| Locale | Field | Severity | Message | Length | Limit |")
+		fmt.Println("|--------|-------|----------|---------|--------|-------|")
+		for _, issue := range result.Issues {
+			length := "-"
+			limit := "-"
+			if issue.Length > 0 {
+				length = fmt.Sprintf("%d", issue.Length)
+			}
+			if issue.Limit > 0 {
+				limit = fmt.Sprintf("%d", issue.Limit)
+			}
+			fmt.Printf("| %s | %s | %s | %s | %s | %s |\n",
+				issue.Locale, issue.Field, issue.Severity, issue.Message, length, limit)
+		}
+	}
+
+	return nil
+}
+
+func printMigrateValidateResultTable(result *MigrateValidateResult) error {
+	fmt.Printf("Fastlane Dir: %s\n\n", result.FastlaneDir)
+
+	// Summary
+	if result.Valid {
+		fmt.Println("VALIDATION PASSED")
+	} else {
+		fmt.Println("VALIDATION FAILED")
+	}
+	fmt.Printf("Locales: %d  Errors: %d  Warnings: %d\n", len(result.Locales), result.ErrorCount, result.WarnCount)
+
+	if len(result.Issues) > 0 {
+		fmt.Println()
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		fmt.Fprintln(w, "LOCALE\tFIELD\tSEVERITY\tMESSAGE\tLENGTH\tLIMIT")
+		for _, issue := range result.Issues {
+			length := "-"
+			limit := "-"
+			if issue.Length > 0 {
+				length = fmt.Sprintf("%d", issue.Length)
+			}
+			if issue.Limit > 0 {
+				limit = fmt.Sprintf("%d", issue.Limit)
+			}
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+				issue.Locale, issue.Field, issue.Severity, issue.Message, length, limit)
+		}
+		w.Flush()
+	}
+
+	return nil
+}
