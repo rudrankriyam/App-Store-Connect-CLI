@@ -3061,3 +3061,27 @@ func TestDeleteAppStoreVersion(t *testing.T) {
 		t.Fatalf("DeleteAppStoreVersion() error: %v", err)
 	}
 }
+
+func TestGetAppCategories(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"appCategories","id":"GAMES","attributes":{"platforms":["IOS","MAC_OS"]}},{"type":"appCategories","id":"HEALTH_AND_FITNESS","attributes":{"platforms":["IOS"]}}],"links":{"self":"https://api.appstoreconnect.apple.com/v1/appCategories"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if !strings.HasPrefix(req.URL.Path, "/v1/appCategories") {
+			t.Fatalf("expected path /v1/appCategories, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.GetAppCategories(context.Background(), WithAppCategoriesLimit(200))
+	if err != nil {
+		t.Fatalf("GetAppCategories() error: %v", err)
+	}
+	if len(result.Data) != 2 {
+		t.Fatalf("expected 2 categories, got %d", len(result.Data))
+	}
+	if result.Data[0].ID != "GAMES" {
+		t.Fatalf("expected first category GAMES, got %s", result.Data[0].ID)
+	}
+}
