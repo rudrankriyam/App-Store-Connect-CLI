@@ -179,6 +179,10 @@ func typeOf(p PaginatedResponse) string {
 		return "BetaGroupsResponse"
 	case *BetaTestersResponse:
 		return "BetaTestersResponse"
+	case *UsersResponse:
+		return "UsersResponse"
+	case *UserInvitationsResponse:
+		return "UserInvitationsResponse"
 	case *SandboxTestersResponse:
 		return "SandboxTestersResponse"
 	case *AnalyticsReportRequestsResponse:

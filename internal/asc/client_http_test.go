@@ -2423,6 +2423,23 @@ func TestCreateUserInvitation_WithVisibleApps(t *testing.T) {
 	}
 }
 
+func TestGetUserVisibleApps_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"apps","id":"app-1","attributes":{"name":"Demo","bundleId":"com.example.demo","sku":"SKU1"}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/users/user-1/visibleApps" {
+			t.Fatalf("expected path /v1/users/user-1/visibleApps, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetUserVisibleApps(context.Background(), "user-1"); err != nil {
+		t.Fatalf("GetUserVisibleApps() error: %v", err)
+	}
+}
+
 func TestAddUserVisibleApps_SendsRequest(t *testing.T) {
 	response := jsonResponse(http.StatusNoContent, ``)
 	client := newTestClient(t, func(req *http.Request) {
