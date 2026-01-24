@@ -61,7 +61,7 @@ Credentials are stored in the system keychain when available, with a local confi
 
 - Keep PRs small and focused.
 - Add or update tests for new behavior.
-- Update `README.md` or `PLAN.md` if behavior or scope changes.
+- Update `README.md` if behavior or scope changes.
 - Avoid committing any credentials or `.p8` files.
 
 ## Security

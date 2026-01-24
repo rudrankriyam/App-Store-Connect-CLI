@@ -194,7 +194,9 @@ asc sandbox list --paginate
 # Submit
 asc submit create --app "APP_ID" --version "1.0.0" --build "BUILD_ID" --confirm
 asc submit status --id "SUBMISSION_ID"
+asc submit status --version-id "VERSION_ID"
 asc submit cancel --id "SUBMISSION_ID" --confirm
+asc submit cancel --version-id "VERSION_ID" --confirm
 
 # Xcode Cloud - Trigger workflow
 asc xcode-cloud run --app "123456789" --workflow "CI" --branch "main"
