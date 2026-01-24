@@ -627,6 +627,99 @@ func TestLocalizationsValidationErrors(t *testing.T) {
 	}
 }
 
+func TestAssetsValidationErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "assets screenshots list missing localization",
+			args:    []string{"assets", "screenshots", "list"},
+			wantErr: "--version-localization is required",
+		},
+		{
+			name:    "assets screenshots upload missing localization",
+			args:    []string{"assets", "screenshots", "upload", "--path", "./screenshots", "--device-type", "IPHONE_65"},
+			wantErr: "--version-localization is required",
+		},
+		{
+			name:    "assets screenshots upload missing path",
+			args:    []string{"assets", "screenshots", "upload", "--version-localization", "LOC_ID", "--device-type", "IPHONE_65"},
+			wantErr: "--path is required",
+		},
+		{
+			name:    "assets screenshots upload missing device type",
+			args:    []string{"assets", "screenshots", "upload", "--version-localization", "LOC_ID", "--path", "./screenshots"},
+			wantErr: "--device-type is required",
+		},
+		{
+			name:    "assets screenshots delete missing id",
+			args:    []string{"assets", "screenshots", "delete"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "assets screenshots delete missing confirm",
+			args:    []string{"assets", "screenshots", "delete", "--id", "SCREENSHOT_ID"},
+			wantErr: "--confirm is required to delete",
+		},
+		{
+			name:    "assets previews list missing localization",
+			args:    []string{"assets", "previews", "list"},
+			wantErr: "--version-localization is required",
+		},
+		{
+			name:    "assets previews upload missing localization",
+			args:    []string{"assets", "previews", "upload", "--path", "./previews", "--device-type", "IPHONE_65"},
+			wantErr: "--version-localization is required",
+		},
+		{
+			name:    "assets previews upload missing path",
+			args:    []string{"assets", "previews", "upload", "--version-localization", "LOC_ID", "--device-type", "IPHONE_65"},
+			wantErr: "--path is required",
+		},
+		{
+			name:    "assets previews upload missing device type",
+			args:    []string{"assets", "previews", "upload", "--version-localization", "LOC_ID", "--path", "./previews"},
+			wantErr: "--device-type is required",
+		},
+		{
+			name:    "assets previews delete missing id",
+			args:    []string{"assets", "previews", "delete"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "assets previews delete missing confirm",
+			args:    []string{"assets", "previews", "delete", "--id", "PREVIEW_ID"},
+			wantErr: "--confirm is required to delete",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := RootCommand("1.2.3")
+			root.FlagSet.SetOutput(io.Discard)
+
+			stdout, stderr := captureOutput(t, func() {
+				if err := root.Parse(test.args); err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
+				err := root.Run(context.Background())
+				if !errors.Is(err, flag.ErrHelp) {
+					t.Fatalf("expected ErrHelp, got %v", err)
+				}
+			})
+
+			if stdout != "" {
+				t.Fatalf("expected empty stdout, got %q", stdout)
+			}
+			if !strings.Contains(stderr, test.wantErr) {
+				t.Fatalf("expected error %q, got %q", test.wantErr, stderr)
+			}
+		})
+	}
+}
+
 func TestBuildLocalizationsValidationErrors(t *testing.T) {
 	tests := []struct {
 		name    string

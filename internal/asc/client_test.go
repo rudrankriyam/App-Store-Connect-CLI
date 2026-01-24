@@ -620,6 +620,379 @@ func TestBuildUploadFileUpdateRequest_JSON(t *testing.T) {
 	}
 }
 
+func TestAppScreenshotSetCreateRequest_JSON(t *testing.T) {
+	req := AppScreenshotSetCreateRequest{
+		Data: AppScreenshotSetCreateData{
+			Type:       ResourceTypeAppScreenshotSets,
+			Attributes: AppScreenshotSetAttributes{ScreenshotDisplayType: "APP_IPHONE_65"},
+			Relationships: &AppScreenshotSetRelationships{
+				AppStoreVersionLocalization: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeAppStoreVersionLocalizations,
+						ID:   "LOC_ID_123",
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(req)
+	if err != nil {
+		t.Fatalf("BuildRequestBody() error: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(body); err != nil {
+		t.Fatalf("read body error: %v", err)
+	}
+
+	var parsed struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				ScreenshotDisplayType string `json:"screenshotDisplayType"`
+			} `json:"attributes"`
+			Relationships struct {
+				AppStoreVersionLocalization struct {
+					Data struct {
+						Type string `json:"type"`
+						ID   string `json:"id"`
+					} `json:"data"`
+				} `json:"appStoreVersionLocalization"`
+			} `json:"relationships"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+
+	if parsed.Data.Type != "appScreenshotSets" {
+		t.Fatalf("expected type=appScreenshotSets, got %q", parsed.Data.Type)
+	}
+	if parsed.Data.Attributes.ScreenshotDisplayType != "APP_IPHONE_65" {
+		t.Fatalf("expected screenshotDisplayType=APP_IPHONE_65, got %q", parsed.Data.Attributes.ScreenshotDisplayType)
+	}
+	if parsed.Data.Relationships.AppStoreVersionLocalization.Data.Type != "appStoreVersionLocalizations" {
+		t.Fatalf("expected relationship type=appStoreVersionLocalizations, got %q", parsed.Data.Relationships.AppStoreVersionLocalization.Data.Type)
+	}
+	if parsed.Data.Relationships.AppStoreVersionLocalization.Data.ID != "LOC_ID_123" {
+		t.Fatalf("expected relationship id=LOC_ID_123, got %q", parsed.Data.Relationships.AppStoreVersionLocalization.Data.ID)
+	}
+}
+
+func TestAppScreenshotCreateRequest_JSON(t *testing.T) {
+	req := AppScreenshotCreateRequest{
+		Data: AppScreenshotCreateData{
+			Type: ResourceTypeAppScreenshots,
+			Attributes: AppScreenshotAttributes{
+				FileName: "shot.png",
+				FileSize: 1024,
+			},
+			Relationships: &AppScreenshotRelationships{
+				AppScreenshotSet: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeAppScreenshotSets,
+						ID:   "SET_ID_123",
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(req)
+	if err != nil {
+		t.Fatalf("BuildRequestBody() error: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(body); err != nil {
+		t.Fatalf("read body error: %v", err)
+	}
+
+	var parsed struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				FileName string `json:"fileName"`
+				FileSize int64  `json:"fileSize"`
+			} `json:"attributes"`
+			Relationships struct {
+				AppScreenshotSet struct {
+					Data struct {
+						Type string `json:"type"`
+						ID   string `json:"id"`
+					} `json:"data"`
+				} `json:"appScreenshotSet"`
+			} `json:"relationships"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+
+	if parsed.Data.Type != "appScreenshots" {
+		t.Fatalf("expected type=appScreenshots, got %q", parsed.Data.Type)
+	}
+	if parsed.Data.Attributes.FileName != "shot.png" {
+		t.Fatalf("expected fileName=shot.png, got %q", parsed.Data.Attributes.FileName)
+	}
+	if parsed.Data.Attributes.FileSize != 1024 {
+		t.Fatalf("expected fileSize=1024, got %d", parsed.Data.Attributes.FileSize)
+	}
+	if parsed.Data.Relationships.AppScreenshotSet.Data.Type != "appScreenshotSets" {
+		t.Fatalf("expected appScreenshotSet type=appScreenshotSets, got %q", parsed.Data.Relationships.AppScreenshotSet.Data.Type)
+	}
+	if parsed.Data.Relationships.AppScreenshotSet.Data.ID != "SET_ID_123" {
+		t.Fatalf("expected appScreenshotSet id=SET_ID_123, got %q", parsed.Data.Relationships.AppScreenshotSet.Data.ID)
+	}
+}
+
+func TestAppScreenshotUpdateRequest_JSON(t *testing.T) {
+	uploaded := true
+	req := AppScreenshotUpdateRequest{
+		Data: AppScreenshotUpdateData{
+			Type: ResourceTypeAppScreenshots,
+			ID:   "SCREENSHOT_ID_123",
+			Attributes: &AppScreenshotUpdateAttributes{
+				Uploaded: &uploaded,
+				SourceFileChecksum: &Checksum{
+					Hash:      "abc123",
+					Algorithm: ChecksumAlgorithmMD5,
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(req)
+	if err != nil {
+		t.Fatalf("BuildRequestBody() error: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(body); err != nil {
+		t.Fatalf("read body error: %v", err)
+	}
+
+	var parsed struct {
+		Data struct {
+			Type       string `json:"type"`
+			ID         string `json:"id"`
+			Attributes struct {
+				Uploaded           bool `json:"uploaded"`
+				SourceFileChecksum struct {
+					Hash      string `json:"hash"`
+					Algorithm string `json:"algorithm"`
+				} `json:"sourceFileChecksum"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+
+	if parsed.Data.Type != "appScreenshots" {
+		t.Fatalf("expected type=appScreenshots, got %q", parsed.Data.Type)
+	}
+	if parsed.Data.ID != "SCREENSHOT_ID_123" {
+		t.Fatalf("expected id=SCREENSHOT_ID_123, got %q", parsed.Data.ID)
+	}
+	if !parsed.Data.Attributes.Uploaded {
+		t.Fatalf("expected uploaded=true")
+	}
+	if parsed.Data.Attributes.SourceFileChecksum.Algorithm != "MD5" {
+		t.Fatalf("expected checksum algorithm=MD5, got %q", parsed.Data.Attributes.SourceFileChecksum.Algorithm)
+	}
+}
+
+func TestAppPreviewSetCreateRequest_JSON(t *testing.T) {
+	req := AppPreviewSetCreateRequest{
+		Data: AppPreviewSetCreateData{
+			Type:       ResourceTypeAppPreviewSets,
+			Attributes: AppPreviewSetAttributes{PreviewType: "IPHONE_65"},
+			Relationships: &AppPreviewSetRelationships{
+				AppStoreVersionLocalization: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeAppStoreVersionLocalizations,
+						ID:   "LOC_ID_123",
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(req)
+	if err != nil {
+		t.Fatalf("BuildRequestBody() error: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(body); err != nil {
+		t.Fatalf("read body error: %v", err)
+	}
+
+	var parsed struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				PreviewType string `json:"previewType"`
+			} `json:"attributes"`
+			Relationships struct {
+				AppStoreVersionLocalization struct {
+					Data struct {
+						Type string `json:"type"`
+						ID   string `json:"id"`
+					} `json:"data"`
+				} `json:"appStoreVersionLocalization"`
+			} `json:"relationships"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+
+	if parsed.Data.Type != "appPreviewSets" {
+		t.Fatalf("expected type=appPreviewSets, got %q", parsed.Data.Type)
+	}
+	if parsed.Data.Attributes.PreviewType != "IPHONE_65" {
+		t.Fatalf("expected previewType=IPHONE_65, got %q", parsed.Data.Attributes.PreviewType)
+	}
+	if parsed.Data.Relationships.AppStoreVersionLocalization.Data.Type != "appStoreVersionLocalizations" {
+		t.Fatalf("expected relationship type=appStoreVersionLocalizations, got %q", parsed.Data.Relationships.AppStoreVersionLocalization.Data.Type)
+	}
+	if parsed.Data.Relationships.AppStoreVersionLocalization.Data.ID != "LOC_ID_123" {
+		t.Fatalf("expected relationship id=LOC_ID_123, got %q", parsed.Data.Relationships.AppStoreVersionLocalization.Data.ID)
+	}
+}
+
+func TestAppPreviewCreateRequest_JSON(t *testing.T) {
+	req := AppPreviewCreateRequest{
+		Data: AppPreviewCreateData{
+			Type: ResourceTypeAppPreviews,
+			Attributes: AppPreviewAttributes{
+				FileName: "preview.mov",
+				FileSize: 2048,
+				MimeType: "video/quicktime",
+			},
+			Relationships: &AppPreviewRelationships{
+				AppPreviewSet: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeAppPreviewSets,
+						ID:   "SET_ID_123",
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(req)
+	if err != nil {
+		t.Fatalf("BuildRequestBody() error: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(body); err != nil {
+		t.Fatalf("read body error: %v", err)
+	}
+
+	var parsed struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				FileName string `json:"fileName"`
+				FileSize int64  `json:"fileSize"`
+				MimeType string `json:"mimeType"`
+			} `json:"attributes"`
+			Relationships struct {
+				AppPreviewSet struct {
+					Data struct {
+						Type string `json:"type"`
+						ID   string `json:"id"`
+					} `json:"data"`
+				} `json:"appPreviewSet"`
+			} `json:"relationships"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+
+	if parsed.Data.Type != "appPreviews" {
+		t.Fatalf("expected type=appPreviews, got %q", parsed.Data.Type)
+	}
+	if parsed.Data.Attributes.FileName != "preview.mov" {
+		t.Fatalf("expected fileName=preview.mov, got %q", parsed.Data.Attributes.FileName)
+	}
+	if parsed.Data.Attributes.FileSize != 2048 {
+		t.Fatalf("expected fileSize=2048, got %d", parsed.Data.Attributes.FileSize)
+	}
+	if parsed.Data.Attributes.MimeType != "video/quicktime" {
+		t.Fatalf("expected mimeType=video/quicktime, got %q", parsed.Data.Attributes.MimeType)
+	}
+	if parsed.Data.Relationships.AppPreviewSet.Data.Type != "appPreviewSets" {
+		t.Fatalf("expected appPreviewSet type=appPreviewSets, got %q", parsed.Data.Relationships.AppPreviewSet.Data.Type)
+	}
+	if parsed.Data.Relationships.AppPreviewSet.Data.ID != "SET_ID_123" {
+		t.Fatalf("expected appPreviewSet id=SET_ID_123, got %q", parsed.Data.Relationships.AppPreviewSet.Data.ID)
+	}
+}
+
+func TestAppPreviewUpdateRequest_JSON(t *testing.T) {
+	uploaded := true
+	req := AppPreviewUpdateRequest{
+		Data: AppPreviewUpdateData{
+			Type: ResourceTypeAppPreviews,
+			ID:   "PREVIEW_ID_123",
+			Attributes: &AppPreviewUpdateAttributes{
+				Uploaded: &uploaded,
+				SourceFileChecksum: &Checksum{
+					Hash:      "def456",
+					Algorithm: ChecksumAlgorithmMD5,
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(req)
+	if err != nil {
+		t.Fatalf("BuildRequestBody() error: %v", err)
+	}
+
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(body); err != nil {
+		t.Fatalf("read body error: %v", err)
+	}
+
+	var parsed struct {
+		Data struct {
+			Type       string `json:"type"`
+			ID         string `json:"id"`
+			Attributes struct {
+				Uploaded           bool `json:"uploaded"`
+				SourceFileChecksum struct {
+					Hash      string `json:"hash"`
+					Algorithm string `json:"algorithm"`
+				} `json:"sourceFileChecksum"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(buf.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to unmarshal body: %v", err)
+	}
+
+	if parsed.Data.Type != "appPreviews" {
+		t.Fatalf("expected type=appPreviews, got %q", parsed.Data.Type)
+	}
+	if parsed.Data.ID != "PREVIEW_ID_123" {
+		t.Fatalf("expected id=PREVIEW_ID_123, got %q", parsed.Data.ID)
+	}
+	if !parsed.Data.Attributes.Uploaded {
+		t.Fatalf("expected uploaded=true")
+	}
+	if parsed.Data.Attributes.SourceFileChecksum.Algorithm != "MD5" {
+		t.Fatalf("expected checksum algorithm=MD5, got %q", parsed.Data.Attributes.SourceFileChecksum.Algorithm)
+	}
+}
+
 func TestAppStoreVersionSubmissionCreateRequest_JSON(t *testing.T) {
 	req := AppStoreVersionSubmissionCreateRequest{
 		Data: AppStoreVersionSubmissionCreateData{

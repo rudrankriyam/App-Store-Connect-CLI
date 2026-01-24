@@ -815,6 +815,85 @@ func TestPrintMarkdown_BuildUploadResult(t *testing.T) {
 	}
 }
 
+func TestPrintTable_AppScreenshotListResult(t *testing.T) {
+	result := &AppScreenshotListResult{
+		VersionLocalizationID: "LOC_123",
+		Sets: []AppScreenshotSetWithScreenshots{
+			{
+				Set: Resource[AppScreenshotSetAttributes]{
+					ID: "SET_123",
+					Attributes: AppScreenshotSetAttributes{
+						ScreenshotDisplayType: "APP_IPHONE_65",
+					},
+				},
+				Screenshots: []Resource[AppScreenshotAttributes]{
+					{
+						ID: "SHOT_123",
+						Attributes: AppScreenshotAttributes{
+							FileName: "shot.png",
+							FileSize: 1024,
+							AssetDeliveryState: &AssetDeliveryState{
+								State: "COMPLETE",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "Set ID") {
+		t.Fatalf("expected header, got: %s", output)
+	}
+	if !strings.Contains(output, "SET_123") {
+		t.Fatalf("expected set ID in output, got: %s", output)
+	}
+	if !strings.Contains(output, "SHOT_123") {
+		t.Fatalf("expected screenshot ID in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_AppPreviewUploadResult(t *testing.T) {
+	result := &AppPreviewUploadResult{
+		VersionLocalizationID: "LOC_123",
+		SetID:                 "SET_123",
+		PreviewType:           "IPHONE_65",
+		Results: []AssetUploadResultItem{
+			{FileName: "preview.mov", AssetID: "PREVIEW_123", State: "COMPLETE"},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(result)
+	})
+
+	if !strings.Contains(output, "| Localization ID | Set ID | Preview Type |") {
+		t.Fatalf("expected preview header, got: %s", output)
+	}
+	if !strings.Contains(output, "PREVIEW_123") {
+		t.Fatalf("expected preview ID in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_AssetDeleteResult(t *testing.T) {
+	result := &AssetDeleteResult{ID: "ASSET_123", Deleted: true}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "ASSET_123") {
+		t.Fatalf("expected asset ID in output, got: %s", output)
+	}
+	if !strings.Contains(output, "Deleted") {
+		t.Fatalf("expected Deleted header, got: %s", output)
+	}
+}
+
 func TestPrintTable_SubmissionResult(t *testing.T) {
 	createdDate := "2026-01-20T00:00:00Z"
 	resp := &AppStoreVersionSubmissionResult{

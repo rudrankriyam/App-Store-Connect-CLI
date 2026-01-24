@@ -1898,6 +1898,334 @@ func TestUpdateBuildUploadFile(t *testing.T) {
 	}
 }
 
+func TestGetAppScreenshotSets(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"appScreenshotSets","id":"SET_123","attributes":{"screenshotDisplayType":"APP_IPHONE_65"}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appStoreVersionLocalizations/LOC_123/appScreenshotSets" {
+			t.Fatalf("expected path /v1/appStoreVersionLocalizations/LOC_123/appScreenshotSets, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.GetAppScreenshotSets(context.Background(), "LOC_123")
+	if err != nil {
+		t.Fatalf("GetAppScreenshotSets() error: %v", err)
+	}
+	if len(result.Data) != 1 {
+		t.Fatalf("expected 1 set, got %d", len(result.Data))
+	}
+}
+
+func TestCreateAppScreenshotSet(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"appScreenshotSets","id":"SET_123","attributes":{"screenshotDisplayType":"APP_IPHONE_65"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appScreenshotSets" {
+			t.Fatalf("expected path /v1/appScreenshotSets, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.CreateAppScreenshotSet(context.Background(), "LOC_123", "APP_IPHONE_65")
+	if err != nil {
+		t.Fatalf("CreateAppScreenshotSet() error: %v", err)
+	}
+	if result.Data.ID != "SET_123" {
+		t.Fatalf("expected set ID SET_123, got %s", result.Data.ID)
+	}
+}
+
+func TestDeleteAppScreenshotSet(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appScreenshotSets/SET_123" {
+			t.Fatalf("expected path /v1/appScreenshotSets/SET_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteAppScreenshotSet(context.Background(), "SET_123"); err != nil {
+		t.Fatalf("DeleteAppScreenshotSet() error: %v", err)
+	}
+}
+
+func TestGetAppScreenshots(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"appScreenshots","id":"SHOT_123","attributes":{"fileName":"shot.png","fileSize":1024}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appScreenshotSets/SET_123/appScreenshots" {
+			t.Fatalf("expected path /v1/appScreenshotSets/SET_123/appScreenshots, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.GetAppScreenshots(context.Background(), "SET_123")
+	if err != nil {
+		t.Fatalf("GetAppScreenshots() error: %v", err)
+	}
+	if len(result.Data) != 1 {
+		t.Fatalf("expected 1 screenshot, got %d", len(result.Data))
+	}
+}
+
+func TestGetAppScreenshot(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"appScreenshots","id":"SHOT_123","attributes":{"fileName":"shot.png","fileSize":1024}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appScreenshots/SHOT_123" {
+			t.Fatalf("expected path /v1/appScreenshots/SHOT_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.GetAppScreenshot(context.Background(), "SHOT_123")
+	if err != nil {
+		t.Fatalf("GetAppScreenshot() error: %v", err)
+	}
+	if result.Data.ID != "SHOT_123" {
+		t.Fatalf("expected screenshot ID SHOT_123, got %s", result.Data.ID)
+	}
+}
+
+func TestCreateAppScreenshot(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"appScreenshots","id":"SHOT_123","attributes":{"fileName":"shot.png","fileSize":1024,"uploadOperations":[{"method":"PUT","url":"https://example.com/upload","length":1024,"offset":0}]}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appScreenshots" {
+			t.Fatalf("expected path /v1/appScreenshots, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.CreateAppScreenshot(context.Background(), "SET_123", "shot.png", 1024)
+	if err != nil {
+		t.Fatalf("CreateAppScreenshot() error: %v", err)
+	}
+	if result.Data.ID != "SHOT_123" {
+		t.Fatalf("expected screenshot ID SHOT_123, got %s", result.Data.ID)
+	}
+}
+
+func TestUpdateAppScreenshot(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"appScreenshots","id":"SHOT_123","attributes":{"uploaded":true}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appScreenshots/SHOT_123" {
+			t.Fatalf("expected path /v1/appScreenshots/SHOT_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	uploaded := true
+	result, err := client.UpdateAppScreenshot(context.Background(), "SHOT_123", uploaded, &Checksum{
+		Hash:      "abc123",
+		Algorithm: ChecksumAlgorithmMD5,
+	})
+	if err != nil {
+		t.Fatalf("UpdateAppScreenshot() error: %v", err)
+	}
+	if result.Data.ID != "SHOT_123" {
+		t.Fatalf("expected screenshot ID SHOT_123, got %s", result.Data.ID)
+	}
+}
+
+func TestDeleteAppScreenshot(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appScreenshots/SHOT_123" {
+			t.Fatalf("expected path /v1/appScreenshots/SHOT_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteAppScreenshot(context.Background(), "SHOT_123"); err != nil {
+		t.Fatalf("DeleteAppScreenshot() error: %v", err)
+	}
+}
+
+func TestGetAppPreviewSets(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"appPreviewSets","id":"SET_123","attributes":{"previewType":"IPHONE_65"}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appStoreVersionLocalizations/LOC_123/appPreviewSets" {
+			t.Fatalf("expected path /v1/appStoreVersionLocalizations/LOC_123/appPreviewSets, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.GetAppPreviewSets(context.Background(), "LOC_123")
+	if err != nil {
+		t.Fatalf("GetAppPreviewSets() error: %v", err)
+	}
+	if len(result.Data) != 1 {
+		t.Fatalf("expected 1 set, got %d", len(result.Data))
+	}
+}
+
+func TestCreateAppPreviewSet(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"appPreviewSets","id":"SET_123","attributes":{"previewType":"IPHONE_65"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appPreviewSets" {
+			t.Fatalf("expected path /v1/appPreviewSets, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.CreateAppPreviewSet(context.Background(), "LOC_123", "IPHONE_65")
+	if err != nil {
+		t.Fatalf("CreateAppPreviewSet() error: %v", err)
+	}
+	if result.Data.ID != "SET_123" {
+		t.Fatalf("expected set ID SET_123, got %s", result.Data.ID)
+	}
+}
+
+func TestDeleteAppPreviewSet(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appPreviewSets/SET_123" {
+			t.Fatalf("expected path /v1/appPreviewSets/SET_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteAppPreviewSet(context.Background(), "SET_123"); err != nil {
+		t.Fatalf("DeleteAppPreviewSet() error: %v", err)
+	}
+}
+
+func TestGetAppPreviews(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"appPreviews","id":"PREVIEW_123","attributes":{"fileName":"preview.mov","fileSize":2048}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appPreviewSets/SET_123/appPreviews" {
+			t.Fatalf("expected path /v1/appPreviewSets/SET_123/appPreviews, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.GetAppPreviews(context.Background(), "SET_123")
+	if err != nil {
+		t.Fatalf("GetAppPreviews() error: %v", err)
+	}
+	if len(result.Data) != 1 {
+		t.Fatalf("expected 1 preview, got %d", len(result.Data))
+	}
+}
+
+func TestGetAppPreview(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"appPreviews","id":"PREVIEW_123","attributes":{"fileName":"preview.mov","fileSize":2048}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appPreviews/PREVIEW_123" {
+			t.Fatalf("expected path /v1/appPreviews/PREVIEW_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.GetAppPreview(context.Background(), "PREVIEW_123")
+	if err != nil {
+		t.Fatalf("GetAppPreview() error: %v", err)
+	}
+	if result.Data.ID != "PREVIEW_123" {
+		t.Fatalf("expected preview ID PREVIEW_123, got %s", result.Data.ID)
+	}
+}
+
+func TestCreateAppPreview(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"appPreviews","id":"PREVIEW_123","attributes":{"fileName":"preview.mov","fileSize":2048,"mimeType":"video/quicktime","uploadOperations":[{"method":"PUT","url":"https://example.com/upload","length":2048,"offset":0}]}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appPreviews" {
+			t.Fatalf("expected path /v1/appPreviews, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.CreateAppPreview(context.Background(), "SET_123", "preview.mov", 2048, "video/quicktime")
+	if err != nil {
+		t.Fatalf("CreateAppPreview() error: %v", err)
+	}
+	if result.Data.ID != "PREVIEW_123" {
+		t.Fatalf("expected preview ID PREVIEW_123, got %s", result.Data.ID)
+	}
+}
+
+func TestUpdateAppPreview(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"appPreviews","id":"PREVIEW_123","attributes":{"uploaded":true}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appPreviews/PREVIEW_123" {
+			t.Fatalf("expected path /v1/appPreviews/PREVIEW_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	uploaded := true
+	result, err := client.UpdateAppPreview(context.Background(), "PREVIEW_123", uploaded, &Checksum{
+		Hash:      "def456",
+		Algorithm: ChecksumAlgorithmMD5,
+	})
+	if err != nil {
+		t.Fatalf("UpdateAppPreview() error: %v", err)
+	}
+	if result.Data.ID != "PREVIEW_123" {
+		t.Fatalf("expected preview ID PREVIEW_123, got %s", result.Data.ID)
+	}
+}
+
+func TestDeleteAppPreview(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appPreviews/PREVIEW_123" {
+			t.Fatalf("expected path /v1/appPreviews/PREVIEW_123, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteAppPreview(context.Background(), "PREVIEW_123"); err != nil {
+		t.Fatalf("DeleteAppPreview() error: %v", err)
+	}
+}
+
 func TestCreateAppStoreVersionSubmission(t *testing.T) {
 	response := jsonResponse(http.StatusCreated, `{"data":{"type":"appStoreVersionSubmissions","id":"SUBMIT_123","attributes":{"createdDate":"2026-01-20T00:00:00Z"}}}`)
 	client := newTestClient(t, func(req *http.Request) {
