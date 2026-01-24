@@ -197,7 +197,7 @@ Examples:
 
 			visibleAppIDs := parseCommaSeparatedIDs(*visibleApps)
 			if strings.TrimSpace(*visibleApps) != "" && len(visibleAppIDs) == 0 {
-				fmt.Fprintln(os.Stderr, "Error: --visible-app is required")
+				fmt.Fprintln(os.Stderr, "Error: --visible-app must include at least one app ID")
 				return flag.ErrHelp
 			}
 
@@ -328,7 +328,7 @@ Examples:
 
 			visibleAppIDs := parseCommaSeparatedIDs(*visibleApps)
 			if strings.TrimSpace(*visibleApps) != "" && len(visibleAppIDs) == 0 {
-				fmt.Fprintln(os.Stderr, "Error: --visible-app is required")
+				fmt.Fprintln(os.Stderr, "Error: --visible-app must include at least one app ID")
 				return flag.ErrHelp
 			}
 
