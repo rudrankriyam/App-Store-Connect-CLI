@@ -191,7 +191,8 @@ func ListCredentials() ([]Credential, error) {
 
 // RemoveCredentials removes a named credential.
 func RemoveCredentials(name string) error {
-	if err := removeFromKeychain(name); err == nil {
+	err := removeFromKeychain(name)
+	if err == nil {
 		_ = removeFromLegacyKeychain(name)
 		return clearDefaultNameIf(name)
 	} else if isKeyringUnavailable(err) {
