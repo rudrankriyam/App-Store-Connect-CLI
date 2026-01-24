@@ -51,7 +51,7 @@ type BetaRecruitmentCriterionOptionsResponse = Response[BetaRecruitmentCriterion
 type BetaGroupMetricAttributes map[string]interface{}
 
 // BetaGroupPublicLinkUsagesResponse is the response from public link usage metrics.
-type BetaGroupPublicLinkUsagesResponse = Response[BetaGroupMetricAttributes]
+type BetaGroupPublicLinkUsagesResponse Response[BetaGroupMetricAttributes]
 
 // BetaGroupTesterUsagesResponse is the response from beta tester usage metrics.
-type BetaGroupTesterUsagesResponse = Response[BetaGroupMetricAttributes]
+type BetaGroupTesterUsagesResponse Response[BetaGroupMetricAttributes]
