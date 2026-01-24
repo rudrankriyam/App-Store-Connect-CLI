@@ -297,3 +297,70 @@ func (c *Client) DeleteAppStoreVersionSubmission(ctx context.Context, id string)
 	_, err := c.do(ctx, "DELETE", fmt.Sprintf("/v1/appStoreVersionSubmissions/%s", id), nil)
 	return err
 }
+
+// AppStoreVersionCreateAttributes describes attributes for creating an app store version.
+type AppStoreVersionCreateAttributes struct {
+	Platform            Platform `json:"platform"`
+	VersionString       string   `json:"versionString"`
+	Copyright           string   `json:"copyright,omitempty"`
+	ReleaseType         string   `json:"releaseType,omitempty"`
+	EarliestReleaseDate string   `json:"earliestReleaseDate,omitempty"`
+}
+
+// AppStoreVersionCreateRelationships describes relationships for creating an app store version.
+type AppStoreVersionCreateRelationships struct {
+	App *Relationship `json:"app"`
+}
+
+// AppStoreVersionCreateData is the data portion of an app store version create request.
+type AppStoreVersionCreateData struct {
+	Type          ResourceType                       `json:"type"`
+	Attributes    AppStoreVersionCreateAttributes    `json:"attributes"`
+	Relationships AppStoreVersionCreateRelationships `json:"relationships"`
+}
+
+// AppStoreVersionCreateRequest is a request to create an app store version.
+type AppStoreVersionCreateRequest struct {
+	Data AppStoreVersionCreateData `json:"data"`
+}
+
+// CreateAppStoreVersion creates a new app store version.
+func (c *Client) CreateAppStoreVersion(ctx context.Context, appID string, attrs AppStoreVersionCreateAttributes) (*AppStoreVersionResponse, error) {
+	request := AppStoreVersionCreateRequest{
+		Data: AppStoreVersionCreateData{
+			Type:       ResourceTypeAppStoreVersions,
+			Attributes: attrs,
+			Relationships: AppStoreVersionCreateRelationships{
+				App: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeApps,
+						ID:   appID,
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(request)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.do(ctx, "POST", "/v1/appStoreVersions", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response AppStoreVersionResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// DeleteAppStoreVersion deletes an app store version (only for versions in PREPARE_FOR_SUBMISSION state).
+func (c *Client) DeleteAppStoreVersion(ctx context.Context, versionID string) error {
+	_, err := c.do(ctx, "DELETE", fmt.Sprintf("/v1/appStoreVersions/%s", versionID), nil)
+	return err
+}

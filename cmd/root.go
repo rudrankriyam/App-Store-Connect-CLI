@@ -40,6 +40,7 @@ func RootCommand(version string) *ffcli.Command {
 			AnalyticsCommand(),
 			FinanceCommand(),
 			AppsCommand(),
+			CategoriesCommand(),
 			TestFlightCommand(),
 			BuildsCommand(),
 			VersionsCommand(),
@@ -51,6 +52,7 @@ func RootCommand(version string) *ffcli.Command {
 			SandboxCommand(),
 			SubmitCommand(),
 			XcodeCloudCommand(),
+			MigrateCommand(),
 			VersionCommand(version),
 		},
 	}

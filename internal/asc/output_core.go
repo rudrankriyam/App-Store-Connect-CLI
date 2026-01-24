@@ -125,6 +125,8 @@ func PrintMarkdown(data interface{}) error {
 		return printCustomerReviewResponseMarkdown(v)
 	case *CustomerReviewResponseDeleteResult:
 		return printCustomerReviewResponseDeleteResultMarkdown(v)
+	case *AppCategoriesResponse:
+		return printAppCategoriesMarkdown(v)
 	default:
 		return PrintJSON(data)
 	}
@@ -237,6 +239,8 @@ func PrintTable(data interface{}) error {
 		return printCustomerReviewResponseTable(v)
 	case *CustomerReviewResponseDeleteResult:
 		return printCustomerReviewResponseDeleteResultTable(v)
+	case *AppCategoriesResponse:
+		return printAppCategoriesTable(v)
 	default:
 		return PrintJSON(data)
 	}

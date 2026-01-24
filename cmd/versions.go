@@ -52,6 +52,8 @@ func VersionsCommand() *ffcli.Command {
 		Subcommands: []*ffcli.Command{
 			VersionsListCommand(),
 			VersionsGetCommand(),
+			VersionsCreateCommand(),
+			VersionsDeleteCommand(),
 			VersionsAttachBuildCommand(),
 			PhasedReleaseCommand(),
 		},
@@ -220,6 +222,134 @@ Examples:
 				if submissionResp != nil {
 					result.SubmissionID = submissionResp.Data.ID
 				}
+			}
+
+			return printOutput(result, *output, *pretty)
+		},
+	}
+}
+
+func VersionsCreateCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("versions create", flag.ExitOnError)
+
+	appID := fs.String("app", "", "App Store Connect app ID (or ASC_APP_ID)")
+	versionString := fs.String("version", "", "Version string (e.g., 1.0.0) (required)")
+	platform := fs.String("platform", "IOS", "Platform: IOS, MAC_OS, TV_OS, VISION_OS")
+	copyright := fs.String("copyright", "", "Copyright text (e.g., '2026 My Company')")
+	releaseType := fs.String("release-type", "", "Release type: MANUAL, AFTER_APPROVAL, SCHEDULED")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "create",
+		ShortUsage: "asc versions create [flags]",
+		ShortHelp:  "Create a new app store version.",
+		LongHelp: `Create a new app store version.
+
+Examples:
+  asc versions create --app "123456789" --version "2.0.0"
+  asc versions create --app "123456789" --version "2.0.0" --platform IOS
+  asc versions create --app "123456789" --version "2.0.0" --copyright "2026 My Company" --release-type MANUAL`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if strings.TrimSpace(*versionString) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --version is required")
+				return flag.ErrHelp
+			}
+
+			normalizedPlatform, err := normalizeSubmitPlatform(*platform)
+			if err != nil {
+				return fmt.Errorf("versions create: %w", err)
+			}
+
+			resolvedAppID := resolveAppID(*appID)
+			if resolvedAppID == "" {
+				fmt.Fprintln(os.Stderr, "Error: --app is required (or set ASC_APP_ID)")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("versions create: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			attrs := asc.AppStoreVersionCreateAttributes{
+				Platform:      asc.Platform(normalizedPlatform),
+				VersionString: strings.TrimSpace(*versionString),
+			}
+			if *copyright != "" {
+				attrs.Copyright = *copyright
+			}
+			if *releaseType != "" {
+				attrs.ReleaseType = strings.ToUpper(*releaseType)
+			}
+
+			resp, err := client.CreateAppStoreVersion(requestCtx, resolvedAppID, attrs)
+			if err != nil {
+				return fmt.Errorf("versions create: %w", err)
+			}
+
+			result := &asc.AppStoreVersionDetailResult{
+				ID:            resp.Data.ID,
+				VersionString: resp.Data.Attributes.VersionString,
+				Platform:      string(resp.Data.Attributes.Platform),
+				State:         resolveAppStoreVersionState(resp.Data.Attributes),
+			}
+
+			return printOutput(result, *output, *pretty)
+		},
+	}
+}
+
+func VersionsDeleteCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("versions delete", flag.ExitOnError)
+
+	versionID := fs.String("version-id", "", "App Store version ID (required)")
+	confirm := fs.Bool("confirm", false, "Confirm deletion (required)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "delete",
+		ShortUsage: "asc versions delete [flags]",
+		ShortHelp:  "Delete an app store version (only versions in PREPARE_FOR_SUBMISSION state).",
+		LongHelp: `Delete an app store version.
+
+Only versions in PREPARE_FOR_SUBMISSION state can be deleted.
+
+Examples:
+  asc versions delete --version-id "VERSION_ID" --confirm`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if strings.TrimSpace(*versionID) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --version-id is required")
+				return flag.ErrHelp
+			}
+			if !*confirm {
+				fmt.Fprintln(os.Stderr, "Error: --confirm is required to delete a version")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("versions delete: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			if err := client.DeleteAppStoreVersion(requestCtx, strings.TrimSpace(*versionID)); err != nil {
+				return fmt.Errorf("versions delete: %w", err)
+			}
+
+			result := map[string]interface{}{
+				"versionId": strings.TrimSpace(*versionID),
+				"deleted":   true,
 			}
 
 			return printOutput(result, *output, *pretty)
