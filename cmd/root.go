@@ -56,6 +56,7 @@ func RootCommand(version string) *ffcli.Command {
 			SubscriptionsCommand(),
 			SubmitCommand(),
 			XcodeCloudCommand(),
+			MigrateCommand(),
 			VersionCommand(version),
 		},
 	}
