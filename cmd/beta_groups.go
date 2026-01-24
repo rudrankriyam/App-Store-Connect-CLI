@@ -245,18 +245,29 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			if *publicLinkLimit != 0 && (*publicLinkLimit < 1 || *publicLinkLimit > 10000) {
+			visited := map[string]bool{}
+			fs.Visit(func(f *flag.Flag) {
+				visited[f.Name] = true
+			})
+
+			if visited["public-link-limit"] && (*publicLinkLimit < 1 || *publicLinkLimit > 10000) {
 				fmt.Fprintln(os.Stderr, "Error: --public-link-limit must be between 1 and 10000")
 				return flag.ErrHelp
 			}
 
-			hasUpdates := strings.TrimSpace(*name) != "" || *publicLinkEnabled || *publicLinkLimitEnabled || *feedbackEnabled || *internal || *allBuilds || *publicLinkLimit != 0
+			hasUpdates := strings.TrimSpace(*name) != "" ||
+				visited["public-link-enabled"] ||
+				visited["public-link-limit-enabled"] ||
+				visited["public-link-limit"] ||
+				visited["feedback-enabled"] ||
+				visited["internal"] ||
+				visited["all-builds"]
 			if !hasUpdates {
 				fmt.Fprintln(os.Stderr, "Error: at least one update flag is required")
 				return flag.ErrHelp
 			}
 
-			if *publicLinkLimitEnabled && *publicLinkLimit == 0 {
+			if visited["public-link-limit-enabled"] && *publicLinkLimitEnabled && !visited["public-link-limit"] {
 				fmt.Fprintln(os.Stderr, "Error: --public-link-limit is required when enabling public link limit")
 				return flag.ErrHelp
 			}
@@ -269,18 +280,40 @@ Examples:
 			requestCtx, cancel := contextWithTimeout(ctx)
 			defer cancel()
 
+			var publicLinkEnabledAttr *bool
+			var publicLinkLimitEnabledAttr *bool
+			var feedbackEnabledAttr *bool
+			var internalAttr *bool
+			var allBuildsAttr *bool
+
+			if visited["public-link-enabled"] {
+				publicLinkEnabledAttr = publicLinkEnabled
+			}
+			if visited["public-link-limit-enabled"] {
+				publicLinkLimitEnabledAttr = publicLinkLimitEnabled
+			}
+			if visited["feedback-enabled"] {
+				feedbackEnabledAttr = feedbackEnabled
+			}
+			if visited["internal"] {
+				internalAttr = internal
+			}
+			if visited["all-builds"] {
+				allBuildsAttr = allBuilds
+			}
+
 			req := asc.BetaGroupUpdateRequest{
 				Data: asc.BetaGroupUpdateData{
 					Type: asc.ResourceTypeBetaGroups,
 					ID:   trimmedID,
 					Attributes: &asc.BetaGroupUpdateAttributes{
 						Name:                   strings.TrimSpace(*name),
-						PublicLinkEnabled:      publicLinkEnabled,
-						PublicLinkLimitEnabled: publicLinkLimitEnabled,
+						PublicLinkEnabled:      publicLinkEnabledAttr,
+						PublicLinkLimitEnabled: publicLinkLimitEnabledAttr,
 						PublicLinkLimit:        *publicLinkLimit,
-						FeedbackEnabled:        feedbackEnabled,
-						IsInternalGroup:        internal,
-						HasAccessToAllBuilds:   allBuilds,
+						FeedbackEnabled:        feedbackEnabledAttr,
+						IsInternalGroup:        internalAttr,
+						HasAccessToAllBuilds:   allBuildsAttr,
 					},
 				},
 			}
