@@ -389,6 +389,99 @@ func TestBetaManagementValidationErrors(t *testing.T) {
 	}
 }
 
+func TestUsersValidationErrors(t *testing.T) {
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "users get missing id",
+			args:    []string{"users", "get"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "users update missing id",
+			args:    []string{"users", "update", "--roles", "ADMIN"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "users update missing roles",
+			args:    []string{"users", "update", "--id", "USER_ID"},
+			wantErr: "--roles is required",
+		},
+		{
+			name:    "users delete missing confirm",
+			args:    []string{"users", "delete", "--id", "USER_ID"},
+			wantErr: "--confirm is required",
+		},
+		{
+			name:    "users delete missing id",
+			args:    []string{"users", "delete", "--confirm"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "users invite missing email",
+			args:    []string{"users", "invite", "--roles", "ADMIN", "--all-apps"},
+			wantErr: "--email is required",
+		},
+		{
+			name:    "users invite missing roles",
+			args:    []string{"users", "invite", "--email", "user@example.com", "--all-apps"},
+			wantErr: "--roles is required",
+		},
+		{
+			name:    "users invite missing access",
+			args:    []string{"users", "invite", "--email", "user@example.com", "--roles", "ADMIN"},
+			wantErr: "--all-apps or --visible-app is required",
+		},
+		{
+			name:    "users invite conflicting access",
+			args:    []string{"users", "invite", "--email", "user@example.com", "--roles", "ADMIN", "--all-apps", "--visible-app", "APP_ID"},
+			wantErr: "--all-apps and --visible-app cannot be used together",
+		},
+		{
+			name:    "users invites get missing id",
+			args:    []string{"users", "invites", "get"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "users invites revoke missing confirm",
+			args:    []string{"users", "invites", "revoke", "--id", "INVITE_ID"},
+			wantErr: "--confirm is required",
+		},
+		{
+			name:    "users invites revoke missing id",
+			args:    []string{"users", "invites", "revoke", "--confirm"},
+			wantErr: "--id is required",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := RootCommand("1.2.3")
+			root.FlagSet.SetOutput(io.Discard)
+
+			stdout, stderr := captureOutput(t, func() {
+				if err := root.Parse(test.args); err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
+				err := root.Run(context.Background())
+				if !errors.Is(err, flag.ErrHelp) {
+					t.Fatalf("expected ErrHelp, got %v", err)
+				}
+			})
+
+			if stdout != "" {
+				t.Fatalf("expected empty stdout, got %q", stdout)
+			}
+			if !strings.Contains(stderr, test.wantErr) {
+				t.Fatalf("expected error %q, got %q", test.wantErr, stderr)
+			}
+		})
+	}
+}
+
 func TestTestFlightAppsValidationErrors(t *testing.T) {
 	t.Setenv("ASC_KEY_ID", "")
 	t.Setenv("ASC_ISSUER_ID", "")
