@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 )
 
@@ -21,15 +20,8 @@ func (c *Client) GetBetaAppReviewDetails(ctx context.Context, appID string, opts
 			return nil, fmt.Errorf("betaAppReviewDetails: %w", err)
 		}
 		path = query.nextURL
-	} else {
-		values := url.Values{}
-		if strings.TrimSpace(appID) != "" {
-			values.Set("filter[app]", strings.TrimSpace(appID))
-		}
-		addLimit(values, query.limit)
-		if queryString := values.Encode(); queryString != "" {
-			path += "?" + queryString
-		}
+	} else if queryString := buildBetaAppReviewDetailsQuery(appID, query); queryString != "" {
+		path += "?" + queryString
 	}
 
 	data, err := c.do(ctx, "GET", path, nil)
