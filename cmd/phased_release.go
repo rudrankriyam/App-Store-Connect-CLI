@@ -19,6 +19,12 @@ var validPhasedReleaseStates = map[string]asc.PhasedReleaseState{
 	"COMPLETE": asc.PhasedReleaseStateComplete,
 }
 
+// validCreateStates are states allowed when creating a phased release
+var validCreateStates = []string{"INACTIVE", "ACTIVE"}
+
+// validUpdateStates are states allowed when updating a phased release
+var validUpdateStates = []string{"ACTIVE", "PAUSED", "COMPLETE"}
+
 // PhasedReleaseCommand returns the phased-release command group.
 func PhasedReleaseCommand() *ffcli.Command {
 	return &ffcli.Command{
@@ -128,8 +134,8 @@ Examples:
 			if stateValue != "" {
 				var ok bool
 				phasedState, ok = validPhasedReleaseStates[stateValue]
-				if !ok {
-					fmt.Fprintln(os.Stderr, "Error: --state must be one of: INACTIVE, ACTIVE")
+				if !ok || (stateValue != "INACTIVE" && stateValue != "ACTIVE") {
+					fmt.Fprintf(os.Stderr, "Error: --state must be one of: %s\n", strings.Join(validCreateStates, ", "))
 					return flag.ErrHelp
 				}
 			}
@@ -192,8 +198,8 @@ Examples:
 			}
 
 			phasedState, ok := validPhasedReleaseStates[stateValue]
-			if !ok {
-				fmt.Fprintln(os.Stderr, "Error: --state must be one of: ACTIVE, PAUSED, COMPLETE")
+			if !ok || stateValue == "INACTIVE" {
+				fmt.Fprintf(os.Stderr, "Error: --state must be one of: %s\n", strings.Join(validUpdateStates, ", "))
 				return flag.ErrHelp
 			}
 

@@ -81,6 +81,13 @@ func TestCreateAppStoreVersionPhasedRelease(t *testing.T) {
 		if createReq.Data.Relationships.AppStoreVersion.Data.ID != "version-123" {
 			t.Errorf("expected version ID version-123, got %s", createReq.Data.Relationships.AppStoreVersion.Data.ID)
 		}
+		// When no state provided, should default to INACTIVE
+		if createReq.Data.Attributes == nil {
+			t.Fatal("expected attributes to be set (default to INACTIVE)")
+		}
+		if createReq.Data.Attributes.PhasedReleaseState != PhasedReleaseStateInactive {
+			t.Errorf("expected default state INACTIVE, got %s", createReq.Data.Attributes.PhasedReleaseState)
+		}
 	}, jsonResponse(http.StatusCreated, string(body)))
 
 	result, err := client.CreateAppStoreVersionPhasedRelease(context.Background(), "version-123", "")
@@ -190,6 +197,18 @@ func TestDeleteAppStoreVersionPhasedRelease(t *testing.T) {
 	err := client.DeleteAppStoreVersionPhasedRelease(context.Background(), "phased-123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestUpdateAppStoreVersionPhasedRelease_EmptyState(t *testing.T) {
+	client := newTestClient(t, nil, nil)
+
+	_, err := client.UpdateAppStoreVersionPhasedRelease(context.Background(), "phased-123", "")
+	if err == nil {
+		t.Fatal("expected error for empty state")
+	}
+	if !strings.Contains(err.Error(), "state is required") {
+		t.Errorf("expected 'state is required' error, got: %v", err)
 	}
 }
 

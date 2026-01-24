@@ -97,10 +97,19 @@ func (c *Client) GetAppStoreVersionPhasedRelease(ctx context.Context, versionID 
 }
 
 // CreateAppStoreVersionPhasedRelease creates a phased release for an app store version.
+// If state is empty, defaults to INACTIVE per API spec.
 func (c *Client) CreateAppStoreVersionPhasedRelease(ctx context.Context, versionID string, state PhasedReleaseState) (*AppStoreVersionPhasedReleaseResponse, error) {
+	// Default to INACTIVE if no state provided (API spec default)
+	if state == "" {
+		state = PhasedReleaseStateInactive
+	}
+
 	payload := AppStoreVersionPhasedReleaseCreateRequest{
 		Data: AppStoreVersionPhasedReleaseCreateData{
 			Type: ResourceTypeAppStoreVersionPhasedReleases,
+			Attributes: &AppStoreVersionPhasedReleaseCreateAttributes{
+				PhasedReleaseState: state,
+			},
 			Relationships: AppStoreVersionPhasedReleaseRelationships{
 				AppStoreVersion: &Relationship{
 					Data: ResourceData{
@@ -110,13 +119,6 @@ func (c *Client) CreateAppStoreVersionPhasedRelease(ctx context.Context, version
 				},
 			},
 		},
-	}
-
-	// Only set attributes if state is provided
-	if state != "" {
-		payload.Data.Attributes = &AppStoreVersionPhasedReleaseCreateAttributes{
-			PhasedReleaseState: state,
-		}
 	}
 
 	body, err := BuildRequestBody(payload)
@@ -138,7 +140,12 @@ func (c *Client) CreateAppStoreVersionPhasedRelease(ctx context.Context, version
 }
 
 // UpdateAppStoreVersionPhasedRelease updates a phased release.
+// State must be provided (ACTIVE, PAUSED, or COMPLETE).
 func (c *Client) UpdateAppStoreVersionPhasedRelease(ctx context.Context, phasedReleaseID string, state PhasedReleaseState) (*AppStoreVersionPhasedReleaseResponse, error) {
+	if state == "" {
+		return nil, fmt.Errorf("state is required for update")
+	}
+
 	payload := AppStoreVersionPhasedReleaseUpdateRequest{
 		Data: AppStoreVersionPhasedReleaseUpdateData{
 			Type: ResourceTypeAppStoreVersionPhasedReleases,
