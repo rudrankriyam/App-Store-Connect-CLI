@@ -7,13 +7,16 @@ import (
 	"text/tabwriter"
 )
 
-// BuildUploadResult represents CLI output for build upload preparation.
+// BuildUploadResult represents CLI output for build upload operations.
 type BuildUploadResult struct {
-	UploadID   string            `json:"uploadId"`
-	FileID     string            `json:"fileId"`
-	FileName   string            `json:"fileName"`
-	FileSize   int64             `json:"fileSize"`
-	Operations []UploadOperation `json:"operations,omitempty"`
+	UploadID            string            `json:"uploadId"`
+	FileID              string            `json:"fileId"`
+	FileName            string            `json:"fileName"`
+	FileSize            int64             `json:"fileSize"`
+	Operations          []UploadOperation `json:"operations,omitempty"`
+	Uploaded            *bool             `json:"uploaded,omitempty"`
+	ChecksumVerified    *bool             `json:"checksumVerified,omitempty"`
+	SourceFileChecksums *Checksums        `json:"sourceFileChecksums,omitempty"`
 }
 
 // BuildBetaGroupsUpdateResult represents CLI output for build beta group updates.
@@ -53,13 +56,23 @@ func printBuildsMarkdown(resp *BuildsResponse) error {
 
 func printBuildUploadResultTable(result *BuildUploadResult) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "Upload ID\tFile ID\tFile Name\tFile Size")
-	fmt.Fprintf(w, "%s\t%s\t%s\t%d\n",
+	headers := []string{"Upload ID", "File ID", "File Name", "File Size"}
+	values := []string{
 		result.UploadID,
 		result.FileID,
 		result.FileName,
-		result.FileSize,
-	)
+		fmt.Sprintf("%d", result.FileSize),
+	}
+	if result.Uploaded != nil {
+		headers = append(headers, "Uploaded")
+		values = append(values, fmt.Sprintf("%t", *result.Uploaded))
+	}
+	if result.ChecksumVerified != nil {
+		headers = append(headers, "Checksum Verified")
+		values = append(values, fmt.Sprintf("%t", *result.ChecksumVerified))
+	}
+	fmt.Fprintln(w, strings.Join(headers, "\t"))
+	fmt.Fprintln(w, strings.Join(values, "\t"))
 	if err := w.Flush(); err != nil {
 		return err
 	}
@@ -81,14 +94,28 @@ func printBuildUploadResultTable(result *BuildUploadResult) error {
 }
 
 func printBuildUploadResultMarkdown(result *BuildUploadResult) error {
-	fmt.Fprintln(os.Stdout, "| Upload ID | File ID | File Name | File Size |")
-	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- |")
-	fmt.Fprintf(os.Stdout, "| %s | %s | %s | %d |\n",
+	headers := []string{"Upload ID", "File ID", "File Name", "File Size"}
+	values := []string{
 		escapeMarkdown(result.UploadID),
 		escapeMarkdown(result.FileID),
 		escapeMarkdown(result.FileName),
-		result.FileSize,
-	)
+		fmt.Sprintf("%d", result.FileSize),
+	}
+	if result.Uploaded != nil {
+		headers = append(headers, "Uploaded")
+		values = append(values, fmt.Sprintf("%t", *result.Uploaded))
+	}
+	if result.ChecksumVerified != nil {
+		headers = append(headers, "Checksum Verified")
+		values = append(values, fmt.Sprintf("%t", *result.ChecksumVerified))
+	}
+	separator := make([]string, len(headers))
+	for i := range separator {
+		separator[i] = "---"
+	}
+	fmt.Fprintf(os.Stdout, "| %s |\n", strings.Join(headers, " | "))
+	fmt.Fprintf(os.Stdout, "| %s |\n", strings.Join(separator, " | "))
+	fmt.Fprintf(os.Stdout, "| %s |\n", strings.Join(values, " | "))
 	if len(result.Operations) == 0 {
 		return nil
 	}

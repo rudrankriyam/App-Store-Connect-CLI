@@ -174,6 +174,13 @@ func contextWithTimeout(ctx context.Context) (context.Context, context.CancelFun
 	return context.WithTimeout(ctx, asc.ResolveTimeout())
 }
 
+func contextWithUploadTimeout(ctx context.Context) (context.Context, context.CancelFunc) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithTimeout(ctx, asc.ResolveUploadTimeout())
+}
+
 func splitCSV(value string) []string {
 	if strings.TrimSpace(value) == "" {
 		return nil

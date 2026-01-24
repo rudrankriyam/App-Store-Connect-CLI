@@ -25,7 +25,9 @@ const (
 	BaseURL = "https://api.appstoreconnect.apple.com"
 	// DefaultTimeout is the default request timeout
 	DefaultTimeout = 30 * time.Second
-	tokenLifetime  = 20 * time.Minute
+	// DefaultUploadTimeout is the default timeout for upload operations.
+	DefaultUploadTimeout = 60 * time.Second
+	tokenLifetime        = 20 * time.Minute
 
 	// Retry defaults
 	DefaultMaxRetries = 3
@@ -181,15 +183,24 @@ func ResolveTimeout() time.Duration {
 	return ResolveTimeoutWithDefault(DefaultTimeout)
 }
 
+// ResolveUploadTimeout returns the upload timeout, optionally overridden by env vars.
+func ResolveUploadTimeout() time.Duration {
+	return resolveTimeoutWithDefaultAndEnv(DefaultUploadTimeout, "ASC_UPLOAD_TIMEOUT", "ASC_UPLOAD_TIMEOUT_SECONDS")
+}
+
 // ResolveTimeoutWithDefault returns the request timeout using a custom default.
 // ASC_TIMEOUT and ASC_TIMEOUT_SECONDS override the default when set.
 func ResolveTimeoutWithDefault(defaultTimeout time.Duration) time.Duration {
+	return resolveTimeoutWithDefaultAndEnv(defaultTimeout, "ASC_TIMEOUT", "ASC_TIMEOUT_SECONDS")
+}
+
+func resolveTimeoutWithDefaultAndEnv(defaultTimeout time.Duration, durationEnv, secondsEnv string) time.Duration {
 	timeout := defaultTimeout
-	if override := strings.TrimSpace(os.Getenv("ASC_TIMEOUT")); override != "" {
+	if override := strings.TrimSpace(os.Getenv(durationEnv)); override != "" {
 		if parsed, err := time.ParseDuration(override); err == nil && parsed > 0 {
 			timeout = parsed
 		}
-	} else if override := strings.TrimSpace(os.Getenv("ASC_TIMEOUT_SECONDS")); override != "" {
+	} else if override := strings.TrimSpace(os.Getenv(secondsEnv)); override != "" {
 		if parsed, err := time.ParseDuration(override + "s"); err == nil && parsed > 0 {
 			timeout = parsed
 		}

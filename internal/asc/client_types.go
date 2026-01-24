@@ -5,6 +5,10 @@ type ResourceType string
 
 const (
 	ResourceTypeApps                         ResourceType = "apps"
+	ResourceTypeAppAvailabilities            ResourceType = "appAvailabilities"
+	ResourceTypeAppPricePoints               ResourceType = "appPricePoints"
+	ResourceTypeAppPriceSchedules            ResourceType = "appPriceSchedules"
+	ResourceTypeAppPrices                    ResourceType = "appPrices"
 	ResourceTypeBuilds                       ResourceType = "builds"
 	ResourceTypeBuildUploads                 ResourceType = "buildUploads"
 	ResourceTypeBuildUploadFiles             ResourceType = "buildUploadFiles"
@@ -25,6 +29,8 @@ const (
 	ResourceTypeAnalyticsReportSegments      ResourceType = "analyticsReportSegments"
 	ResourceTypeUsers                        ResourceType = "users"
 	ResourceTypeUserInvitations              ResourceType = "userInvitations"
+	ResourceTypeTerritories                  ResourceType = "territories"
+	ResourceTypeTerritoryAvailabilities      ResourceType = "territoryAvailabilities"
 )
 
 // Resource is a generic ASC API resource wrapper.

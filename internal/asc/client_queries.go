@@ -108,6 +108,14 @@ type userInvitationsQuery struct {
 	listQuery
 }
 
+type territoriesQuery struct {
+	listQuery
+}
+
+type pricePointsQuery struct {
+	listQuery
+	territory string
+}
 func buildReviewQuery(opts []ReviewOption) string {
 	query := &reviewQuery{}
 	for _, opt := range opts {
@@ -268,6 +276,21 @@ func buildAppStoreVersionLocalizationsQuery(query *appStoreVersionLocalizationsQ
 func buildAppInfoLocalizationsQuery(query *appInfoLocalizationsQuery) string {
 	values := url.Values{}
 	addCSV(values, "filter[locale]", query.locales)
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildTerritoriesQuery(query *territoriesQuery) string {
+	values := url.Values{}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildPricePointsQuery(query *pricePointsQuery) string {
+	values := url.Values{}
+	if strings.TrimSpace(query.territory) != "" {
+		values.Set("filter[territory]", strings.TrimSpace(query.territory))
+	}
 	addLimit(values, query.limit)
 	return values.Encode()
 }

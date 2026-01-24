@@ -815,6 +815,33 @@ func TestPrintMarkdown_BuildUploadResult(t *testing.T) {
 	}
 }
 
+func TestPrintTable_BuildUploadResult_WithUploadState(t *testing.T) {
+	uploaded := true
+	checksumVerified := true
+	resp := &BuildUploadResult{
+		UploadID:         "UPLOAD_123",
+		FileID:           "FILE_123",
+		FileName:         "app.ipa",
+		FileSize:         1024,
+		Uploaded:         &uploaded,
+		ChecksumVerified: &checksumVerified,
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Uploaded") {
+		t.Fatalf("expected uploaded column, got: %s", output)
+	}
+	if !strings.Contains(output, "Checksum Verified") {
+		t.Fatalf("expected checksum verified column, got: %s", output)
+	}
+	if !strings.Contains(output, "true") {
+		t.Fatalf("expected true values in output, got: %s", output)
+	}
+}
+
 func TestPrintTable_SubmissionResult(t *testing.T) {
 	createdDate := "2026-01-20T00:00:00Z"
 	resp := &AppStoreVersionSubmissionResult{

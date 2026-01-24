@@ -47,6 +47,12 @@ type AppStoreVersionLocalizationsOption func(*appStoreVersionLocalizationsQuery)
 // AppInfoLocalizationsOption is a functional option for app info localizations.
 type AppInfoLocalizationsOption func(*appInfoLocalizationsQuery)
 
+// TerritoriesOption is a functional option for GetTerritories.
+type TerritoriesOption func(*territoriesQuery)
+
+// PricePointsOption is a functional option for GetAppPricePoints.
+type PricePointsOption func(*pricePointsQuery)
+
 // WithFeedbackDeviceModels filters feedback by device model(s).
 func WithFeedbackDeviceModels(models []string) FeedbackOption {
 	return func(q *feedbackQuery) {
@@ -595,5 +601,50 @@ func WithAppInfoLocalizationsNextURL(next string) AppInfoLocalizationsOption {
 func WithAppInfoLocalizationLocales(locales []string) AppInfoLocalizationsOption {
 	return func(q *appInfoLocalizationsQuery) {
 		q.locales = normalizeList(locales)
+	}
+}
+
+// WithTerritoriesLimit sets the max number of territories to return.
+func WithTerritoriesLimit(limit int) TerritoriesOption {
+	return func(q *territoriesQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithTerritoriesNextURL uses a next page URL directly.
+func WithTerritoriesNextURL(next string) TerritoriesOption {
+	return func(q *territoriesQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithPricePointsLimit sets the max number of price points to return.
+func WithPricePointsLimit(limit int) PricePointsOption {
+	return func(q *pricePointsQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithPricePointsNextURL uses a next page URL directly.
+func WithPricePointsNextURL(next string) PricePointsOption {
+	return func(q *pricePointsQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithPricePointsTerritory filters app price points by territory.
+func WithPricePointsTerritory(territory string) PricePointsOption {
+	return func(q *pricePointsQuery) {
+		if strings.TrimSpace(territory) != "" {
+			q.territory = strings.ToUpper(strings.TrimSpace(territory))
+		}
 	}
 }

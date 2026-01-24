@@ -43,6 +43,8 @@ API keys are generated at https://appstoreconnect.apple.com/access/integrations/
 | `ASC_VENDOR_NUMBER` | Sales/finance reports |
 | `ASC_TIMEOUT` | Request timeout (e.g., `90s`, `2m`) |
 | `ASC_TIMEOUT_SECONDS` | Timeout in seconds (alternative) |
+| `ASC_UPLOAD_TIMEOUT` | Upload timeout (e.g., `60s`, `2m`) |
+| `ASC_UPLOAD_TIMEOUT_SECONDS` | Upload timeout in seconds (alternative) |
 
 ## Further Reading
 

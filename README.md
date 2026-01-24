@@ -65,6 +65,8 @@ Analytics & sales env:
 - `ASC_ANALYTICS_VENDOR_NUMBER` (fallback for analytics vendor number)
 - `ASC_TIMEOUT` (e.g., `90s`, `2m`)
 - `ASC_TIMEOUT_SECONDS` (e.g., `120`)
+- `ASC_UPLOAD_TIMEOUT` (e.g., `60s`, `2m`)
+- `ASC_UPLOAD_TIMEOUT_SECONDS` (e.g., `120`)
 
 Retry behavior env:
 - `ASC_MAX_RETRIES` (default: 3) for GET/HEAD requests
@@ -606,5 +608,5 @@ MIT License - see [LICENSE](LICENSE) for details.
 ---
 
 <p align="center">
-  Built with Go and Claude Code
+  Primarily Built with Cursor and GPT-5.2 Codex Extra High, with MiniMax M2.1 and Claude Code for Implementation
 </p>

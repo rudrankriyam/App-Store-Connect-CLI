@@ -27,11 +27,11 @@ type BuildResponse = SingleResponse[BuildAttributes]
 
 // BuildUploadAttributes describes a build upload resource.
 type BuildUploadAttributes struct {
-	CFBundleShortVersionString string   `json:"cfBundleShortVersionString"`
-	CFBundleVersion            string   `json:"cfBundleVersion"`
-	Platform                   Platform `json:"platform"`
-	CreatedDate                *string  `json:"createdDate,omitempty"`
-	State                      *string  `json:"state,omitempty"`
+	CFBundleShortVersionString string              `json:"cfBundleShortVersionString"`
+	CFBundleVersion            string              `json:"cfBundleVersion"`
+	Platform                   Platform            `json:"platform"`
+	CreatedDate                *string             `json:"createdDate,omitempty"`
+	State                      *AppMediaAssetState `json:"state,omitempty"`
 }
 
 // BuildUploadRelationships describes the relationships for a build upload.
