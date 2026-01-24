@@ -234,19 +234,3 @@ func printBetaGroupMetricsMarkdown(items []Resource[BetaGroupMetricAttributes]) 
 	}
 	return nil
 }
-
-func printBetaGroupPublicLinkUsagesTable(resp *BetaGroupPublicLinkUsagesResponse) error {
-	return printBetaGroupMetricsTable(resp.Data)
-}
-
-func printBetaGroupPublicLinkUsagesMarkdown(resp *BetaGroupPublicLinkUsagesResponse) error {
-	return printBetaGroupMetricsMarkdown(resp.Data)
-}
-
-func printBetaGroupTesterUsagesTable(resp *BetaGroupTesterUsagesResponse) error {
-	return printBetaGroupMetricsTable(resp.Data)
-}
-
-func printBetaGroupTesterUsagesMarkdown(resp *BetaGroupTesterUsagesResponse) error {
-	return printBetaGroupMetricsMarkdown(resp.Data)
-}
