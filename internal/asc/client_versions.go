@@ -364,3 +364,52 @@ func (c *Client) DeleteAppStoreVersion(ctx context.Context, versionID string) er
 	_, err := c.do(ctx, "DELETE", fmt.Sprintf("/v1/appStoreVersions/%s", versionID), nil)
 	return err
 }
+
+// AppStoreVersionUpdateAttributes describes attributes for updating an app store version.
+type AppStoreVersionUpdateAttributes struct {
+	Copyright           *string `json:"copyright,omitempty"`
+	ReleaseType         *string `json:"releaseType,omitempty"`
+	EarliestReleaseDate *string `json:"earliestReleaseDate,omitempty"`
+	VersionString       *string `json:"versionString,omitempty"`
+	Downloadable        *bool   `json:"downloadable,omitempty"`
+}
+
+// AppStoreVersionUpdateData is the data portion of an app store version update request.
+type AppStoreVersionUpdateData struct {
+	Type       ResourceType                    `json:"type"`
+	ID         string                          `json:"id"`
+	Attributes AppStoreVersionUpdateAttributes `json:"attributes"`
+}
+
+// AppStoreVersionUpdateRequest is a request to update an app store version.
+type AppStoreVersionUpdateRequest struct {
+	Data AppStoreVersionUpdateData `json:"data"`
+}
+
+// UpdateAppStoreVersion updates an existing app store version.
+func (c *Client) UpdateAppStoreVersion(ctx context.Context, versionID string, attrs AppStoreVersionUpdateAttributes) (*AppStoreVersionResponse, error) {
+	request := AppStoreVersionUpdateRequest{
+		Data: AppStoreVersionUpdateData{
+			Type:       ResourceTypeAppStoreVersions,
+			ID:         versionID,
+			Attributes: attrs,
+		},
+	}
+
+	body, err := BuildRequestBody(request)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.do(ctx, "PATCH", fmt.Sprintf("/v1/appStoreVersions/%s", versionID), body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response AppStoreVersionResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
