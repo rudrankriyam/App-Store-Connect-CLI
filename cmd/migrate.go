@@ -128,6 +128,18 @@ Examples:
 			requestCtx, cancel := contextWithTimeout(ctx)
 			defer cancel()
 
+			// Fetch existing localizations to get their IDs
+			existingLocs, err := client.GetAppStoreVersionLocalizations(requestCtx, strings.TrimSpace(*versionID))
+			if err != nil {
+				return fmt.Errorf("migrate import: failed to fetch existing localizations: %w", err)
+			}
+
+			// Build a map of locale -> localization ID
+			localeToID := make(map[string]string)
+			for _, loc := range existingLocs.Data {
+				localeToID[loc.Attributes.Locale] = loc.ID
+			}
+
 			// Upload each localization
 			uploaded := make([]LocalizationUploadItem, 0, len(localizations))
 			for _, loc := range localizations {
@@ -141,13 +153,18 @@ Examples:
 					MarketingURL:    loc.MarketingURL,
 				}
 
-				// Try to update existing localization first, create if it doesn't exist
-				_, err := client.UpdateAppStoreVersionLocalization(requestCtx, strings.TrimSpace(*versionID), loc.Locale, attrs)
-				if err != nil {
-					// Try creating instead
-					_, createErr := client.CreateAppStoreVersionLocalization(requestCtx, strings.TrimSpace(*versionID), attrs)
-					if createErr != nil {
-						return fmt.Errorf("migrate import: failed to upload %s: %w", loc.Locale, createErr)
+				// Check if localization already exists
+				if existingID, exists := localeToID[loc.Locale]; exists {
+					// Update existing localization
+					_, err := client.UpdateAppStoreVersionLocalization(requestCtx, existingID, attrs)
+					if err != nil {
+						return fmt.Errorf("migrate import: failed to update %s: %w", loc.Locale, err)
+					}
+				} else {
+					// Create new localization
+					_, err := client.CreateAppStoreVersionLocalization(requestCtx, strings.TrimSpace(*versionID), attrs)
+					if err != nil {
+						return fmt.Errorf("migrate import: failed to create %s: %w", loc.Locale, err)
 					}
 				}
 
