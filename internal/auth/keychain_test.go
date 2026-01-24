@@ -181,6 +181,7 @@ func withArrayKeyring(t *testing.T) {
 	previous := keyringOpener
 	previousLegacy := legacyKeyringOpener
 	kr := keyring.NewArrayKeyring([]keyring.Item{})
+	legacyKr := keyring.NewArrayKeyring([]keyring.Item{})
 	keyringOpener = func() (keyring.Keyring, error) {
 		return kr, nil
 	}
@@ -189,6 +190,6 @@ func withArrayKeyring(t *testing.T) {
 		legacyKeyringOpener = previousLegacy
 	})
 	legacyKeyringOpener = func() (keyring.Keyring, error) {
-		return kr, nil
+		return legacyKr, nil
 	}
 }
