@@ -6,7 +6,9 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -144,6 +146,63 @@ func TestStoreCredentialsFallbackToConfig(t *testing.T) {
 	}
 }
 
+func TestListCredentials_MigratesLegacyEntries(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	newKr, legacyKr := withSeparateKeyrings(t)
+
+	storeCredentialInKeyring(t, newKr, "new-key", "NEW123", "ISSNEW", "/tmp/new.p8")
+	storeCredentialInKeyring(t, legacyKr, "legacy-key", "OLD123", "ISSOLD", "/tmp/old.p8")
+
+	creds, err := ListCredentials()
+	if err != nil {
+		t.Fatalf("ListCredentials() error: %v", err)
+	}
+	if len(creds) != 2 {
+		t.Fatalf("expected 2 credentials, got %d", len(creds))
+	}
+
+	if _, err := legacyKr.Get(keyringKey("legacy-key")); !errors.Is(err, keyring.ErrKeyNotFound) {
+		t.Fatalf("expected legacy credential to be removed, got %v", err)
+	}
+	if _, err := newKr.Get(keyringKey("legacy-key")); err != nil {
+		t.Fatalf("expected legacy credential to be migrated, got %v", err)
+	}
+}
+
+func TestListCredentials_RemovesLegacyDuplicates(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	newKr, legacyKr := withSeparateKeyrings(t)
+
+	storeCredentialInKeyring(t, newKr, "shared-key", "NEW123", "ISSNEW", "/tmp/new.p8")
+	storeCredentialInKeyring(t, legacyKr, "shared-key", "OLD123", "ISSOLD", "/tmp/old.p8")
+
+	creds, err := ListCredentials()
+	if err != nil {
+		t.Fatalf("ListCredentials() error: %v", err)
+	}
+	if len(creds) != 1 {
+		t.Fatalf("expected 1 credential, got %d", len(creds))
+	}
+
+	if _, err := legacyKr.Get(keyringKey("shared-key")); !errors.Is(err, keyring.ErrKeyNotFound) {
+		t.Fatalf("expected legacy duplicate to be removed, got %v", err)
+	}
+}
+
+func TestRemoveCredentials_FallsBackToLegacy(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	_, legacyKr := withSeparateKeyrings(t)
+
+	storeCredentialInKeyring(t, legacyKr, "legacy-only", "OLD123", "ISSOLD", "/tmp/old.p8")
+
+	if err := RemoveCredentials("legacy-only"); err != nil {
+		t.Fatalf("RemoveCredentials() error: %v", err)
+	}
+	if _, err := legacyKr.Get(keyringKey("legacy-only")); !errors.Is(err, keyring.ErrKeyNotFound) {
+		t.Fatalf("expected legacy credential to be removed, got %v", err)
+	}
+}
+
 func writeECDSAPEM(t *testing.T, path string, mode os.FileMode, pkcs8 bool) {
 	t.Helper()
 
@@ -190,5 +249,40 @@ func withArrayKeyring(t *testing.T) {
 	})
 	legacyKeyringOpener = func() (keyring.Keyring, error) {
 		return kr, nil
+	}
+}
+
+func withSeparateKeyrings(t *testing.T) (keyring.Keyring, keyring.Keyring) {
+	t.Helper()
+	previous := keyringOpener
+	previousLegacy := legacyKeyringOpener
+	kr := keyring.NewArrayKeyring([]keyring.Item{})
+	legacyKr := keyring.NewArrayKeyring([]keyring.Item{})
+	keyringOpener = func() (keyring.Keyring, error) {
+		return kr, nil
+	}
+	legacyKeyringOpener = func() (keyring.Keyring, error) {
+		return legacyKr, nil
+	}
+	t.Cleanup(func() {
+		keyringOpener = previous
+		legacyKeyringOpener = previousLegacy
+	})
+	return kr, legacyKr
+}
+
+func storeCredentialInKeyring(t *testing.T, kr keyring.Keyring, name, keyID, issuerID, keyPath string) {
+	t.Helper()
+	payload := credentialPayload{
+		KeyID:          keyID,
+		IssuerID:       issuerID,
+		PrivateKeyPath: keyPath,
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatalf("marshal payload error: %v", err)
+	}
+	if err := kr.Set(keyring.Item{Key: keyringKey(name), Data: data}); err != nil {
+		t.Fatalf("store keyring item error: %v", err)
 	}
 }

@@ -191,14 +191,31 @@ func ListCredentials() ([]Credential, error) {
 
 // RemoveCredentials removes a named credential.
 func RemoveCredentials(name string) error {
-	if err := removeFromKeychain(name); err == nil {
+	err := removeFromKeychain(name)
+	if err == nil {
 		_ = removeFromLegacyKeychain(name)
 		return clearDefaultNameIf(name)
-	} else if !isKeyringUnavailable(err) {
-		return err
 	}
-
-	return removeFromConfig(name)
+	if isKeyringUnavailable(err) {
+		return removeFromConfigIfPresent(name)
+	}
+	if errors.Is(err, keyring.ErrKeyNotFound) {
+		legacyErr := removeFromLegacyKeychain(name)
+		if legacyErr == nil {
+			return clearDefaultNameIf(name)
+		}
+		if isKeyringUnavailable(legacyErr) {
+			return removeFromConfigIfPresent(name)
+		}
+		if errors.Is(legacyErr, keyring.ErrKeyNotFound) {
+			if err := removeFromConfigIfPresent(name); err != nil {
+				return err
+			}
+			return keyring.ErrKeyNotFound
+		}
+		return legacyErr
+	}
+	return err
 }
 
 // RemoveAllCredentials removes all stored credentials
@@ -274,16 +291,30 @@ func listFromKeychain() ([]Credential, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(credentials) > 0 {
+
+	legacy, err := listFromLegacyKeychain()
+	if err != nil || len(legacy) == 0 {
 		return credentials, nil
 	}
 
-	legacy, err := listFromLegacyKeychain()
-	if err == nil && len(legacy) > 0 {
-		migrateLegacyCredentials(legacy)
-		return legacy, nil
+	existing := make(map[string]struct{}, len(credentials))
+	for _, cred := range credentials {
+		existing[cred.Name] = struct{}{}
 	}
 
+	var toMigrate []Credential
+	for _, cred := range legacy {
+		if _, ok := existing[cred.Name]; ok {
+			_ = removeFromLegacyKeychain(cred.Name)
+			continue
+		}
+		credentials = append(credentials, cred)
+		toMigrate = append(toMigrate, cred)
+	}
+
+	if len(toMigrate) > 0 {
+		migrateLegacyCredentials(toMigrate)
+	}
 	return credentials, nil
 }
 
@@ -309,6 +340,9 @@ func listFromKeyring(kr keyring.Keyring) ([]Credential, error) {
 		}
 		item, err := kr.Get(key)
 		if err != nil {
+			if errors.Is(err, keyring.ErrKeyNotFound) {
+				continue
+			}
 			return nil, err
 		}
 		var payload credentialPayload
@@ -340,6 +374,16 @@ func migrateLegacyCredentials(credentials []Credential) {
 		}
 		_ = removeFromLegacyKeychain(cred.Name)
 	}
+}
+
+func removeFromConfigIfPresent(name string) error {
+	if err := removeFromConfig(name); err != nil {
+		if errors.Is(err, config.ErrNotFound) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func removeFromKeychain(name string) error {
