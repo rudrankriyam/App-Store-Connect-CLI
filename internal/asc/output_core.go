@@ -77,6 +77,10 @@ func PrintMarkdown(data interface{}) error {
 		return printLocalizationUploadResultMarkdown(v)
 	case *BuildUploadResult:
 		return printBuildUploadResultMarkdown(v)
+	case *TestFlightPublishResult:
+		return printTestFlightPublishResultMarkdown(v)
+	case *AppStorePublishResult:
+		return printAppStorePublishResultMarkdown(v)
 	case *SalesReportResult:
 		return printSalesReportResultMarkdown(v)
 	case *FinanceReportResult:
@@ -201,6 +205,10 @@ func PrintTable(data interface{}) error {
 		return printLocalizationUploadResultTable(v)
 	case *BuildUploadResult:
 		return printBuildUploadResultTable(v)
+	case *TestFlightPublishResult:
+		return printTestFlightPublishResultTable(v)
+	case *AppStorePublishResult:
+		return printAppStorePublishResultTable(v)
 	case *SalesReportResult:
 		return printSalesReportResultTable(v)
 	case *FinanceReportResult:

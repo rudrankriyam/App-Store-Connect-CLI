@@ -401,6 +401,43 @@ func TestGetAppStoreVersion(t *testing.T) {
 	}
 }
 
+func TestCreateAppStoreVersion(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"appStoreVersions","id":"VERSION_123","attributes":{"versionString":"1.0.0","platform":"IOS"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/appStoreVersions" {
+			t.Fatalf("expected path /v1/appStoreVersions, got %s", req.URL.Path)
+		}
+		var payload AppStoreVersionCreateRequest
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeAppStoreVersions {
+			t.Fatalf("unexpected resource type: %s", payload.Data.Type)
+		}
+		if payload.Data.Attributes.VersionString != "1.0.0" || payload.Data.Attributes.Platform != PlatformIOS {
+			t.Fatalf("unexpected attributes: %+v", payload.Data.Attributes)
+		}
+		if payload.Data.Relationships == nil || payload.Data.Relationships.App == nil {
+			t.Fatalf("expected app relationship")
+		}
+		if payload.Data.Relationships.App.Data.Type != ResourceTypeApps || payload.Data.Relationships.App.Data.ID != "APP_123" {
+			t.Fatalf("unexpected app relationship: %+v", payload.Data.Relationships.App.Data)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	result, err := client.CreateAppStoreVersion(context.Background(), "APP_123", "1.0.0", PlatformIOS)
+	if err != nil {
+		t.Fatalf("CreateAppStoreVersion() error: %v", err)
+	}
+	if result.Data.ID != "VERSION_123" {
+		t.Fatalf("expected version ID VERSION_123, got %s", result.Data.ID)
+	}
+}
+
 func TestAttachBuildToVersion(t *testing.T) {
 	response := jsonResponse(http.StatusNoContent, ``)
 	client := newTestClient(t, func(req *http.Request) {
@@ -452,6 +489,36 @@ func TestAddBetaGroupsToBuild_SendsRequest(t *testing.T) {
 
 	if err := client.AddBetaGroupsToBuild(context.Background(), "build-1", []string{"group-1", "group-2"}); err != nil {
 		t.Fatalf("AddBetaGroupsToBuild() error: %v", err)
+	}
+}
+
+func TestAddBetaGroupsToBuildWithNotify_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, ``)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/builds/build-1/relationships/betaGroups" {
+			t.Fatalf("expected path /v1/builds/build-1/relationships/betaGroups, got %s", req.URL.Path)
+		}
+		if req.URL.RawQuery != "notify=true" {
+			t.Fatalf("expected notify query, got %q", req.URL.RawQuery)
+		}
+		var payload RelationshipRequest
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if len(payload.Data) != 1 {
+			t.Fatalf("expected 1 relationship, got %d", len(payload.Data))
+		}
+		if payload.Data[0].Type != ResourceTypeBetaGroups || payload.Data[0].ID != "group-1" {
+			t.Fatalf("unexpected relationship: %+v", payload.Data[0])
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.AddBetaGroupsToBuildWithNotify(context.Background(), "build-1", []string{"group-1"}, true); err != nil {
+		t.Fatalf("AddBetaGroupsToBuildWithNotify() error: %v", err)
 	}
 }
 

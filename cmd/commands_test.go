@@ -720,6 +720,71 @@ func TestBuildsUploadValidationErrors(t *testing.T) {
 	}
 }
 
+func TestPublishValidationErrors(t *testing.T) {
+	t.Setenv("ASC_APP_ID", "")
+
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "publish testflight missing app",
+			args:    []string{"publish", "testflight", "--ipa", "app.ipa", "--group", "GROUP_ID"},
+			wantErr: "Error: --app is required",
+		},
+		{
+			name:    "publish testflight missing ipa",
+			args:    []string{"publish", "testflight", "--app", "APP_123", "--group", "GROUP_ID"},
+			wantErr: "Error: --ipa is required",
+		},
+		{
+			name:    "publish testflight missing group",
+			args:    []string{"publish", "testflight", "--app", "APP_123", "--ipa", "app.ipa"},
+			wantErr: "Error: --group is required",
+		},
+		{
+			name:    "publish appstore missing app",
+			args:    []string{"publish", "appstore", "--ipa", "app.ipa", "--version", "1.0.0"},
+			wantErr: "Error: --app is required",
+		},
+		{
+			name:    "publish appstore missing ipa",
+			args:    []string{"publish", "appstore", "--app", "APP_123", "--version", "1.0.0"},
+			wantErr: "Error: --ipa is required",
+		},
+		{
+			name:    "publish appstore submit missing confirm",
+			args:    []string{"publish", "appstore", "--app", "APP_123", "--ipa", "app.ipa", "--version", "1.0.0", "--submit"},
+			wantErr: "Error: --confirm is required with --submit",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := RootCommand("1.2.3")
+			root.FlagSet.SetOutput(io.Discard)
+
+			stdout, stderr := captureOutput(t, func() {
+				if err := root.Parse(test.args); err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
+				err := root.Run(context.Background())
+				if !errors.Is(err, flag.ErrHelp) {
+					t.Fatalf("expected ErrHelp, got %v", err)
+				}
+			})
+
+			if stdout != "" {
+				t.Fatalf("expected empty stdout, got %q", stdout)
+			}
+			if !strings.Contains(stderr, test.wantErr) {
+				t.Fatalf("expected error %q, got %q", test.wantErr, stderr)
+			}
+		})
+	}
+}
+
 func TestSubmitValidationErrors(t *testing.T) {
 	tests := []struct {
 		name    string

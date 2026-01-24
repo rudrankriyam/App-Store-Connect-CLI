@@ -16,6 +16,29 @@ type AppStoreVersionAttributes struct {
 	CreatedDate     string   `json:"createdDate,omitempty"`
 }
 
+// AppStoreVersionCreateAttributes describes app store version create payload attributes.
+type AppStoreVersionCreateAttributes struct {
+	Platform      Platform `json:"platform"`
+	VersionString string   `json:"versionString"`
+}
+
+// AppStoreVersionCreateRelationships describes relationships for app store version create requests.
+type AppStoreVersionCreateRelationships struct {
+	App *Relationship `json:"app"`
+}
+
+// AppStoreVersionCreateData is the data portion of an app store version create request.
+type AppStoreVersionCreateData struct {
+	Type          ResourceType                        `json:"type"`
+	Attributes    AppStoreVersionCreateAttributes     `json:"attributes"`
+	Relationships *AppStoreVersionCreateRelationships `json:"relationships"`
+}
+
+// AppStoreVersionCreateRequest is a request to create an app store version.
+type AppStoreVersionCreateRequest struct {
+	Data AppStoreVersionCreateData `json:"data"`
+}
+
 // AppStoreVersionsResponse is the response from app store versions endpoints.
 type AppStoreVersionsResponse = Response[AppStoreVersionAttributes]
 
@@ -177,6 +200,44 @@ func (c *Client) GetPreReleaseVersion(ctx context.Context, id string) (*PreRelea
 func (c *Client) GetAppStoreVersion(ctx context.Context, versionID string) (*AppStoreVersionResponse, error) {
 	path := fmt.Sprintf("/v1/appStoreVersions/%s", versionID)
 	data, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response AppStoreVersionResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
+// CreateAppStoreVersion creates a new app store version for an app.
+func (c *Client) CreateAppStoreVersion(ctx context.Context, appID, version string, platform Platform) (*AppStoreVersionResponse, error) {
+	payload := AppStoreVersionCreateRequest{
+		Data: AppStoreVersionCreateData{
+			Type: ResourceTypeAppStoreVersions,
+			Attributes: AppStoreVersionCreateAttributes{
+				Platform:      platform,
+				VersionString: version,
+			},
+			Relationships: &AppStoreVersionCreateRelationships{
+				App: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeApps,
+						ID:   strings.TrimSpace(appID),
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.do(ctx, "POST", "/v1/appStoreVersions", body)
 	if err != nil {
 		return nil, err
 	}

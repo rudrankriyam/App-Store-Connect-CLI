@@ -265,6 +265,11 @@ func (c *Client) ExpireBuild(ctx context.Context, buildID string) (*BuildRespons
 
 // AddBetaGroupsToBuild adds beta groups to a build for TestFlight distribution.
 func (c *Client) AddBetaGroupsToBuild(ctx context.Context, buildID string, groupIDs []string) error {
+	return c.AddBetaGroupsToBuildWithNotify(ctx, buildID, groupIDs, false)
+}
+
+// AddBetaGroupsToBuildWithNotify adds beta groups to a build with optional notifications.
+func (c *Client) AddBetaGroupsToBuildWithNotify(ctx context.Context, buildID string, groupIDs []string, notify bool) error {
 	payload := RelationshipRequest{
 		Data: make([]RelationshipData, len(groupIDs)),
 	}
@@ -281,6 +286,9 @@ func (c *Client) AddBetaGroupsToBuild(ctx context.Context, buildID string, group
 	}
 
 	path := fmt.Sprintf("/v1/builds/%s/relationships/betaGroups", buildID)
+	if notify {
+		path += "?notify=true"
+	}
 	if _, err := c.do(ctx, "POST", path, body); err != nil {
 		return err
 	}
