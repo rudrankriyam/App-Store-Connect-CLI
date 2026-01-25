@@ -50,6 +50,7 @@ func UsersListCommand() *ffcli.Command {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
 
 	email := fs.String("email", "", "Filter by email/username")
+	role := fs.String("role", "", "Filter by role (comma-separated): ADMIN, DEVELOPER, APP_MANAGER, etc.")
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
 	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
@@ -65,6 +66,8 @@ func UsersListCommand() *ffcli.Command {
 Examples:
   asc users list
   asc users list --email "user@example.com"
+  asc users list --role "ADMIN"
+  asc users list --role "DEVELOPER,APP_MANAGER"
   asc users list --limit 50
   asc users list --paginate`,
 		FlagSet:   fs,
@@ -87,6 +90,7 @@ Examples:
 
 			opts := []asc.UsersOption{
 				asc.WithUsersEmail(*email),
+				asc.WithUsersRoles(splitCSV(*role)),
 				asc.WithUsersLimit(*limit),
 				asc.WithUsersNextURL(*next),
 			}
@@ -196,10 +200,6 @@ Examples:
 			}
 
 			visibleAppIDs := parseCommaSeparatedIDs(*visibleApps)
-			if strings.TrimSpace(*visibleApps) != "" && len(visibleAppIDs) == 0 {
-				fmt.Fprintln(os.Stderr, "Error: --visible-app must include at least one app ID")
-				return flag.ErrHelp
-			}
 
 			client, err := getASCClient()
 			if err != nil {
@@ -224,7 +224,7 @@ Examples:
 
 			if len(visibleAppIDs) > 0 {
 				if err := client.SetUserVisibleApps(requestCtx, idValue, visibleAppIDs); err != nil {
-					return fmt.Errorf("users update: failed to set visible apps: %w", err)
+					return fmt.Errorf("users update: roles updated but failed to set visible apps: %w", err)
 				}
 			}
 
@@ -291,6 +291,8 @@ func UsersInviteCommand() *ffcli.Command {
 	fs := flag.NewFlagSet("invite", flag.ExitOnError)
 
 	email := fs.String("email", "", "Email address to invite")
+	firstName := fs.String("first-name", "", "First name of the invitee (required)")
+	lastName := fs.String("last-name", "", "Last name of the invitee (required)")
 	roles := fs.String("roles", "", "Comma-separated role IDs")
 	allApps := fs.Bool("all-apps", false, "Grant access to all apps")
 	visibleApps := fs.String("visible-app", "", "Comma-separated app IDs for visible apps")
@@ -299,19 +301,31 @@ func UsersInviteCommand() *ffcli.Command {
 
 	return &ffcli.Command{
 		Name:       "invite",
-		ShortUsage: "asc users invite --email user@example.com --roles ROLE_ID[,ROLE_ID...] [--all-apps | --visible-app APP_ID[,APP_ID...]]",
+		ShortUsage: "asc users invite --email EMAIL --first-name NAME --last-name NAME --roles ROLE[,ROLE...] [--all-apps | --visible-app APP_ID[,APP_ID...]]",
 		ShortHelp:  "Invite a user.",
 		LongHelp: `Invite a new user to App Store Connect.
 
 Examples:
-  asc users invite --email "user@example.com" --roles "ADMIN" --all-apps
-  asc users invite --email "user@example.com" --roles "DEVELOPER" --visible-app "APP_ID"`,
+  asc users invite --email "user@example.com" --first-name "Jane" --last-name "Doe" --roles "ADMIN" --all-apps
+  asc users invite --email "user@example.com" --first-name "John" --last-name "Smith" --roles "DEVELOPER" --visible-app "APP_ID"`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
 			emailValue := strings.TrimSpace(*email)
 			if emailValue == "" {
 				fmt.Fprintln(os.Stderr, "Error: --email is required")
+				return flag.ErrHelp
+			}
+
+			firstNameValue := strings.TrimSpace(*firstName)
+			if firstNameValue == "" {
+				fmt.Fprintln(os.Stderr, "Error: --first-name is required")
+				return flag.ErrHelp
+			}
+
+			lastNameValue := strings.TrimSpace(*lastName)
+			if lastNameValue == "" {
+				fmt.Fprintln(os.Stderr, "Error: --last-name is required")
 				return flag.ErrHelp
 			}
 
@@ -327,10 +341,6 @@ Examples:
 			}
 
 			visibleAppIDs := parseCommaSeparatedIDs(*visibleApps)
-			if strings.TrimSpace(*visibleApps) != "" && len(visibleAppIDs) == 0 {
-				fmt.Fprintln(os.Stderr, "Error: --visible-app must include at least one app ID")
-				return flag.ErrHelp
-			}
 
 			if !*allApps && len(visibleAppIDs) == 0 {
 				fmt.Fprintln(os.Stderr, "Error: --all-apps or --visible-app is required")
@@ -346,8 +356,10 @@ Examples:
 			defer cancel()
 
 			attrs := asc.UserInvitationCreateAttributes{
-				Email: emailValue,
-				Roles: roleValues,
+				Email:     emailValue,
+				FirstName: firstNameValue,
+				LastName:  lastNameValue,
+				Roles:     roleValues,
 			}
 			if *allApps {
 				allAppsVisible := true
