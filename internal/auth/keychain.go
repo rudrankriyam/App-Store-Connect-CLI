@@ -275,11 +275,11 @@ func RemoveCredentials(name string) error {
 func RemoveAllCredentials() error {
 	if err := removeAllFromKeychain(); err == nil {
 		_ = removeAllFromLegacyKeychain()
-		return removeConfigFiles()
+		return clearConfigCredentials()
 	} else if !isKeyringUnavailable(err) {
 		return err
 	}
-	return removeConfigFiles()
+	return clearConfigCredentials()
 }
 
 func removeConfigFiles() error {
