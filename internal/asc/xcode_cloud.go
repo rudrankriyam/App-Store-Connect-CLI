@@ -913,3 +913,98 @@ func IsBuildRunComplete(progress CiBuildRunExecutionProgress) bool {
 func IsBuildRunSuccessful(status CiBuildRunCompletionStatus) bool {
 	return status == CiBuildRunCompletionStatusSucceeded
 }
+
+// CiBuildActionAttributes describes a CI build action resource.
+type CiBuildActionAttributes struct {
+	Name              string                      `json:"name,omitempty"`
+	ActionType        string                      `json:"actionType,omitempty"` // BUILD, ANALYZE, TEST, ARCHIVE
+	ExecutionProgress CiBuildRunExecutionProgress `json:"executionProgress,omitempty"`
+	CompletionStatus  CiBuildRunCompletionStatus  `json:"completionStatus,omitempty"`
+	StartedDate       string                      `json:"startedDate,omitempty"`
+	FinishedDate      string                      `json:"finishedDate,omitempty"`
+	IssueCounts       *CiIssueCounts              `json:"issueCounts,omitempty"`
+}
+
+// CiBuildActionResource represents a CI build action resource.
+type CiBuildActionResource struct {
+	Type       ResourceType            `json:"type"`
+	ID         string                  `json:"id"`
+	Attributes CiBuildActionAttributes `json:"attributes,omitempty"`
+}
+
+// CiBuildActionsResponse is the response from CI build actions endpoints.
+type CiBuildActionsResponse struct {
+	Data  []CiBuildActionResource `json:"data"`
+	Links Links                   `json:"links,omitempty"`
+}
+
+// GetLinks returns the links field for pagination.
+func (r *CiBuildActionsResponse) GetLinks() *Links {
+	return &r.Links
+}
+
+// GetData returns the data field for aggregation.
+func (r *CiBuildActionsResponse) GetData() interface{} {
+	return r.Data
+}
+
+type ciBuildActionsQuery struct {
+	listQuery
+}
+
+// CiBuildActionsOption is a functional option for GetCiBuildActions.
+type CiBuildActionsOption func(*ciBuildActionsQuery)
+
+// WithCiBuildActionsLimit sets the max number of build actions to return.
+func WithCiBuildActionsLimit(limit int) CiBuildActionsOption {
+	return func(q *ciBuildActionsQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithCiBuildActionsNextURL uses a next page URL directly.
+func WithCiBuildActionsNextURL(next string) CiBuildActionsOption {
+	return func(q *ciBuildActionsQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+func buildCiBuildActionsQuery(query *ciBuildActionsQuery) string {
+	values := url.Values{}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+// GetCiBuildActions retrieves build actions for a build run.
+func (c *Client) GetCiBuildActions(ctx context.Context, buildRunID string, opts ...CiBuildActionsOption) (*CiBuildActionsResponse, error) {
+	query := &ciBuildActionsQuery{}
+	for _, opt := range opts {
+		opt(query)
+	}
+
+	path := fmt.Sprintf("/v1/ciBuildRuns/%s/actions", buildRunID)
+	if query.nextURL != "" {
+		if err := validateNextURL(query.nextURL); err != nil {
+			return nil, fmt.Errorf("ciBuildActions: %w", err)
+		}
+		path = query.nextURL
+	} else if queryString := buildCiBuildActionsQuery(query); queryString != "" {
+		path += "?" + queryString
+	}
+
+	data, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response CiBuildActionsResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}

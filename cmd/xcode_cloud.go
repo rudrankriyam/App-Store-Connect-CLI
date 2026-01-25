@@ -29,6 +29,7 @@ func XcodeCloudCommand() *ffcli.Command {
 Examples:
   asc xcode-cloud workflows --app "APP_ID"
   asc xcode-cloud build-runs --workflow-id "WORKFLOW_ID"
+  asc xcode-cloud actions --run-id "BUILD_RUN_ID"
   asc xcode-cloud run --app "APP_ID" --workflow "WorkflowName" --branch "main"
   asc xcode-cloud run --workflow-id "WORKFLOW_ID" --git-reference-id "REF_ID"
   asc xcode-cloud run --app "APP_ID" --workflow "Deploy" --branch "main" --wait
@@ -41,6 +42,7 @@ Examples:
 			XcodeCloudStatusCommand(),
 			XcodeCloudWorkflowsCommand(),
 			XcodeCloudBuildRunsCommand(),
+			XcodeCloudActionsCommand(),
 		},
 		Exec: func(ctx context.Context, args []string) error {
 			return flag.ErrHelp
@@ -422,6 +424,87 @@ Examples:
 			resp, err := client.GetCiBuildRuns(requestCtx, resolvedWorkflowID, opts...)
 			if err != nil {
 				return fmt.Errorf("xcode-cloud build-runs: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// XcodeCloudActionsCommand returns the xcode-cloud actions subcommand.
+func XcodeCloudActionsCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("actions", flag.ExitOnError)
+
+	runID := fs.String("run-id", "", "Build run ID to get actions for (required)")
+	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
+	next := fs.String("next", "", "Fetch next page using a links.next URL")
+	paginate := fs.Bool("paginate", false, "Automatically fetch all pages (aggregate results)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "actions",
+		ShortUsage: "asc xcode-cloud actions [flags]",
+		ShortHelp:  "List build actions for an Xcode Cloud build run.",
+		LongHelp: `List build actions for an Xcode Cloud build run.
+
+Build actions show the individual steps of a build run (e.g., "Resolve Dependencies",
+"Archive", "Upload") and their status, which helps diagnose why builds failed.
+
+Examples:
+  asc xcode-cloud actions --run-id "BUILD_RUN_ID"
+  asc xcode-cloud actions --run-id "BUILD_RUN_ID" --output table
+  asc xcode-cloud actions --run-id "BUILD_RUN_ID" --limit 50
+  asc xcode-cloud actions --run-id "BUILD_RUN_ID" --paginate`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if *limit != 0 && (*limit < 1 || *limit > 200) {
+				return fmt.Errorf("xcode-cloud actions: --limit must be between 1 and 200")
+			}
+			if err := validateNextURL(*next); err != nil {
+				return fmt.Errorf("xcode-cloud actions: %w", err)
+			}
+
+			resolvedRunID := strings.TrimSpace(*runID)
+			if resolvedRunID == "" && strings.TrimSpace(*next) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --run-id is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud actions: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			opts := []asc.CiBuildActionsOption{
+				asc.WithCiBuildActionsLimit(*limit),
+				asc.WithCiBuildActionsNextURL(*next),
+			}
+
+			if *paginate {
+				paginateOpts := append(opts, asc.WithCiBuildActionsLimit(200))
+				firstPage, err := client.GetCiBuildActions(requestCtx, resolvedRunID, paginateOpts...)
+				if err != nil {
+					return fmt.Errorf("xcode-cloud actions: failed to fetch: %w", err)
+				}
+
+				resp, err := asc.PaginateAll(requestCtx, firstPage, func(ctx context.Context, nextURL string) (asc.PaginatedResponse, error) {
+					return client.GetCiBuildActions(ctx, resolvedRunID, asc.WithCiBuildActionsNextURL(nextURL))
+				})
+				if err != nil {
+					return fmt.Errorf("xcode-cloud actions: %w", err)
+				}
+
+				return printOutput(resp, *output, *pretty)
+			}
+
+			resp, err := client.GetCiBuildActions(requestCtx, resolvedRunID, opts...)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud actions: %w", err)
 			}
 
 			return printOutput(resp, *output, *pretty)

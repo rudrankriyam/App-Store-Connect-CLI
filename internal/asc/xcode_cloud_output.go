@@ -171,3 +171,51 @@ func printCiBuildRunsMarkdown(resp *CiBuildRunsResponse) error {
 	}
 	return nil
 }
+
+func printCiBuildActionsTable(resp *CiBuildActionsResponse) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "Name\tType\tProgress\tStatus\tErrors\tWarnings\tStarted\tFinished")
+	for _, item := range resp.Data {
+		errors := 0
+		warnings := 0
+		if item.Attributes.IssueCounts != nil {
+			errors = item.Attributes.IssueCounts.Errors
+			warnings = item.Attributes.IssueCounts.Warnings
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%d\t%s\t%s\n",
+			item.Attributes.Name,
+			item.Attributes.ActionType,
+			string(item.Attributes.ExecutionProgress),
+			string(item.Attributes.CompletionStatus),
+			errors,
+			warnings,
+			item.Attributes.StartedDate,
+			item.Attributes.FinishedDate,
+		)
+	}
+	return w.Flush()
+}
+
+func printCiBuildActionsMarkdown(resp *CiBuildActionsResponse) error {
+	fmt.Fprintln(os.Stdout, "| Name | Type | Progress | Status | Errors | Warnings | Started | Finished |")
+	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- | --- | --- | --- | --- |")
+	for _, item := range resp.Data {
+		errors := 0
+		warnings := 0
+		if item.Attributes.IssueCounts != nil {
+			errors = item.Attributes.IssueCounts.Errors
+			warnings = item.Attributes.IssueCounts.Warnings
+		}
+		fmt.Fprintf(os.Stdout, "| %s | %s | %s | %s | %d | %d | %s | %s |\n",
+			escapeMarkdown(item.Attributes.Name),
+			escapeMarkdown(item.Attributes.ActionType),
+			escapeMarkdown(string(item.Attributes.ExecutionProgress)),
+			escapeMarkdown(string(item.Attributes.CompletionStatus)),
+			errors,
+			warnings,
+			escapeMarkdown(item.Attributes.StartedDate),
+			escapeMarkdown(item.Attributes.FinishedDate),
+		)
+	}
+	return nil
+}

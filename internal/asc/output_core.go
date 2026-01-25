@@ -189,6 +189,8 @@ func PrintMarkdown(data interface{}) error {
 		return printCiWorkflowsMarkdown(v)
 	case *CiBuildRunsResponse:
 		return printCiBuildRunsMarkdown(v)
+	case *CiBuildActionsResponse:
+		return printCiBuildActionsMarkdown(v)
 	case *CustomerReviewResponseResponse:
 		return printCustomerReviewResponseMarkdown(v)
 	case *CustomerReviewResponseDeleteResult:
@@ -369,6 +371,8 @@ func PrintTable(data interface{}) error {
 		return printCiWorkflowsTable(v)
 	case *CiBuildRunsResponse:
 		return printCiBuildRunsTable(v)
+	case *CiBuildActionsResponse:
+		return printCiBuildActionsTable(v)
 	case *CustomerReviewResponseResponse:
 		return printCustomerReviewResponseTable(v)
 	case *CustomerReviewResponseDeleteResult:
