@@ -81,8 +81,8 @@ func TestCreateReviewSubmission(t *testing.T) {
 	if resp.Data.ID != "submission-123" {
 		t.Fatalf("expected ID submission-123, got %s", resp.Data.ID)
 	}
-	if resp.Data.Attributes.SubmissionState != "READY_FOR_REVIEW" {
-		t.Fatalf("expected state READY_FOR_REVIEW, got %s", resp.Data.Attributes.SubmissionState)
+	if resp.Data.Attributes.SubmissionState != ReviewSubmissionStateReadyForReview {
+		t.Fatalf("expected state %s, got %s", ReviewSubmissionStateReadyForReview, resp.Data.Attributes.SubmissionState)
 	}
 }
 
@@ -133,8 +133,8 @@ func TestSubmitReviewSubmission(t *testing.T) {
 		t.Fatalf("SubmitReviewSubmission() error: %v", err)
 	}
 
-	if resp.Data.Attributes.SubmissionState != "WAITING_FOR_REVIEW" {
-		t.Fatalf("expected state WAITING_FOR_REVIEW, got %s", resp.Data.Attributes.SubmissionState)
+	if resp.Data.Attributes.SubmissionState != ReviewSubmissionStateWaitingForReview {
+		t.Fatalf("expected state %s, got %s", ReviewSubmissionStateWaitingForReview, resp.Data.Attributes.SubmissionState)
 	}
 }
 

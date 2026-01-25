@@ -21,9 +21,9 @@ const (
 
 // ReviewSubmissionAttributes describes review submission attributes.
 type ReviewSubmissionAttributes struct {
-	Platform        Platform `json:"platform,omitempty"`
-	SubmissionState string   `json:"state,omitempty"`
-	SubmittedDate   string   `json:"submittedDate,omitempty"`
+	Platform        Platform              `json:"platform,omitempty"`
+	SubmissionState ReviewSubmissionState `json:"state,omitempty"`
+	SubmittedDate   string                `json:"submittedDate,omitempty"`
 }
 
 // ReviewSubmissionRelationships describes review submission relationships.

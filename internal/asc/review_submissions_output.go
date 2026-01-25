@@ -15,7 +15,7 @@ func printReviewSubmissionsTable(resp *ReviewSubmissionsResponse) error {
 		itemCount := reviewSubmissionItemCount(item.Relationships)
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
 			item.ID,
-			sanitizeTerminal(item.Attributes.SubmissionState),
+			sanitizeTerminal(string(item.Attributes.SubmissionState)),
 			sanitizeTerminal(string(item.Attributes.Platform)),
 			sanitizeTerminal(item.Attributes.SubmittedDate),
 			sanitizeTerminal(appID),
@@ -33,7 +33,7 @@ func printReviewSubmissionsMarkdown(resp *ReviewSubmissionsResponse) error {
 		itemCount := reviewSubmissionItemCount(item.Relationships)
 		fmt.Fprintf(os.Stdout, "| %s | %s | %s | %s | %s | %s |\n",
 			escapeMarkdown(item.ID),
-			escapeMarkdown(item.Attributes.SubmissionState),
+			escapeMarkdown(string(item.Attributes.SubmissionState)),
 			escapeMarkdown(string(item.Attributes.Platform)),
 			escapeMarkdown(item.Attributes.SubmittedDate),
 			escapeMarkdown(appID),
