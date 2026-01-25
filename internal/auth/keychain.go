@@ -526,6 +526,28 @@ func storeInConfigAt(name string, payload credentialPayload, configPath string) 
 	return config.SaveAt(configPath, cfg)
 }
 
+func hasCompleteCredentials(cfg *config.Config) bool {
+	return cfg != nil && cfg.KeyID != "" && cfg.IssuerID != "" && cfg.PrivateKeyPath != ""
+}
+
+func hasAnyCredentials(cfg *config.Config) bool {
+	if cfg == nil {
+		return false
+	}
+	return cfg.KeyID != "" || cfg.IssuerID != "" || cfg.PrivateKeyPath != ""
+}
+
+func loadGlobalConfigForCredentials() (*config.Config, error) {
+	if strings.TrimSpace(os.Getenv("ASC_CONFIG_PATH")) != "" {
+		return nil, config.ErrNotFound
+	}
+	path, err := config.GlobalPath()
+	if err != nil {
+		return nil, err
+	}
+	return config.LoadAt(path)
+}
+
 func listFromConfig() ([]Credential, error) {
 	cfg, err := config.Load()
 	if err != nil {
@@ -533,6 +555,22 @@ func listFromConfig() ([]Credential, error) {
 			return []Credential{}, nil
 		}
 		return nil, err
+	}
+	if !hasCompleteCredentials(cfg) {
+		if hasAnyCredentials(cfg) {
+			return []Credential{}, nil
+		}
+		globalCfg, err := loadGlobalConfigForCredentials()
+		if err != nil {
+			if err == config.ErrNotFound {
+				return []Credential{}, nil
+			}
+			return nil, err
+		}
+		if !hasCompleteCredentials(globalCfg) {
+			return []Credential{}, nil
+		}
+		cfg = globalCfg
 	}
 	if cfg.KeyID == "" || cfg.IssuerID == "" || cfg.PrivateKeyPath == "" {
 		return []Credential{}, nil
@@ -555,10 +593,28 @@ func listFromConfig() ([]Credential, error) {
 func getDefaultFromConfig() (*config.Config, error) {
 	cfg, err := config.Load()
 	if err != nil {
-		return nil, err
+		if err != config.ErrNotFound {
+			return nil, err
+		}
 	}
-	if cfg.KeyID == "" || cfg.IssuerID == "" || cfg.PrivateKeyPath == "" {
-		return nil, fmt.Errorf("incomplete credentials")
+	if !hasCompleteCredentials(cfg) {
+		if hasAnyCredentials(cfg) {
+			return nil, fmt.Errorf("incomplete credentials")
+		}
+		globalCfg, globalErr := loadGlobalConfigForCredentials()
+		if globalErr != nil {
+			if globalErr == config.ErrNotFound {
+				if err == config.ErrNotFound {
+					return nil, err
+				}
+				return nil, fmt.Errorf("incomplete credentials")
+			}
+			return nil, globalErr
+		}
+		if !hasCompleteCredentials(globalCfg) {
+			return nil, fmt.Errorf("incomplete credentials")
+		}
+		cfg = globalCfg
 	}
 	return cfg, nil
 }
