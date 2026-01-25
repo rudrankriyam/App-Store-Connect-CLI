@@ -422,22 +422,32 @@ func TestUsersValidationErrors(t *testing.T) {
 		},
 		{
 			name:    "users invite missing email",
-			args:    []string{"users", "invite", "--roles", "ADMIN", "--all-apps"},
+			args:    []string{"users", "invite", "--first-name", "Jane", "--last-name", "Doe", "--roles", "ADMIN", "--all-apps"},
 			wantErr: "--email is required",
 		},
 		{
+			name:    "users invite missing first name",
+			args:    []string{"users", "invite", "--email", "user@example.com", "--last-name", "Doe", "--roles", "ADMIN", "--all-apps"},
+			wantErr: "--first-name is required",
+		},
+		{
+			name:    "users invite missing last name",
+			args:    []string{"users", "invite", "--email", "user@example.com", "--first-name", "Jane", "--roles", "ADMIN", "--all-apps"},
+			wantErr: "--last-name is required",
+		},
+		{
 			name:    "users invite missing roles",
-			args:    []string{"users", "invite", "--email", "user@example.com", "--all-apps"},
+			args:    []string{"users", "invite", "--email", "user@example.com", "--first-name", "Jane", "--last-name", "Doe", "--all-apps"},
 			wantErr: "--roles is required",
 		},
 		{
 			name:    "users invite missing access",
-			args:    []string{"users", "invite", "--email", "user@example.com", "--roles", "ADMIN"},
+			args:    []string{"users", "invite", "--email", "user@example.com", "--first-name", "Jane", "--last-name", "Doe", "--roles", "ADMIN"},
 			wantErr: "--all-apps or --visible-app is required",
 		},
 		{
 			name:    "users invite conflicting access",
-			args:    []string{"users", "invite", "--email", "user@example.com", "--roles", "ADMIN", "--all-apps", "--visible-app", "APP_ID"},
+			args:    []string{"users", "invite", "--email", "user@example.com", "--first-name", "Jane", "--last-name", "Doe", "--roles", "ADMIN", "--all-apps", "--visible-app", "APP_ID"},
 			wantErr: "--all-apps and --visible-app cannot be used together",
 		},
 		{

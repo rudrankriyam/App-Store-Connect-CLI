@@ -536,6 +536,13 @@ func WithUsersEmail(email string) UsersOption {
 	}
 }
 
+// WithUsersRoles filters users by roles.
+func WithUsersRoles(roles []string) UsersOption {
+	return func(q *usersQuery) {
+		q.roles = normalizeList(roles)
+	}
+}
+
 // WithUserInvitationsLimit sets the max number of invitations to return.
 func WithUserInvitationsLimit(limit int) UserInvitationsOption {
 	return func(q *userInvitationsQuery) {

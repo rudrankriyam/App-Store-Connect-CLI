@@ -102,6 +102,7 @@ type betaTestersQuery struct {
 type usersQuery struct {
 	listQuery
 	email string
+	roles []string
 }
 
 type userInvitationsQuery struct {
@@ -116,6 +117,7 @@ type pricePointsQuery struct {
 	listQuery
 	territory string
 }
+
 func buildReviewQuery(opts []ReviewOption) string {
 	query := &reviewQuery{}
 	for _, opt := range opts {
@@ -232,6 +234,7 @@ func buildUsersQuery(query *usersQuery) string {
 	if strings.TrimSpace(query.email) != "" {
 		values.Set("filter[username]", strings.TrimSpace(query.email))
 	}
+	addCSV(values, "filter[roles]", query.roles)
 	addLimit(values, query.limit)
 	return values.Encode()
 }
