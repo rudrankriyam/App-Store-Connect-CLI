@@ -2942,6 +2942,9 @@ func TestGetBetaGroupTesterUsages(t *testing.T) {
 		if req.URL.Path != "/v1/betaGroups/group-1/metrics/betaTesterUsages" {
 			t.Fatalf("expected path /v1/betaGroups/group-1/metrics/betaTesterUsages, got %s", req.URL.Path)
 		}
+		if req.URL.Query().Get("groupBy") != "betaTesters" {
+			t.Fatalf("expected groupBy=betaTesters, got %q", req.URL.Query().Get("groupBy"))
+		}
 		assertAuthorized(t, req)
 	}, response)
 

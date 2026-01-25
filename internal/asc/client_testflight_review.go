@@ -433,7 +433,7 @@ func (c *Client) GetBetaGroupTesterUsages(ctx context.Context, groupID string) (
 		return nil, fmt.Errorf("groupID is required")
 	}
 
-	path := fmt.Sprintf("/v1/betaGroups/%s/metrics/betaTesterUsages", groupID)
+	path := fmt.Sprintf("/v1/betaGroups/%s/metrics/betaTesterUsages?groupBy=betaTesters", groupID)
 	data, err := c.do(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, err
