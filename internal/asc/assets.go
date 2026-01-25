@@ -9,7 +9,7 @@ type AppScreenshotSetAttributes struct {
 type AppScreenshotAttributes struct {
 	FileSize           int64               `json:"fileSize"`
 	FileName           string              `json:"fileName"`
-	SourceFileChecksum *Checksum           `json:"sourceFileChecksum,omitempty"`
+	SourceFileChecksum string              `json:"sourceFileChecksum,omitempty"`
 	ImageAsset         *ImageAsset         `json:"imageAsset,omitempty"`
 	AssetToken         string              `json:"assetToken,omitempty"`
 	AssetType          string              `json:"assetType,omitempty"`
@@ -45,7 +45,7 @@ type AppPreviewSetAttributes struct {
 type AppPreviewAttributes struct {
 	FileSize             int64               `json:"fileSize"`
 	FileName             string              `json:"fileName"`
-	SourceFileChecksum   *Checksum           `json:"sourceFileChecksum,omitempty"`
+	SourceFileChecksum   string              `json:"sourceFileChecksum,omitempty"`
 	PreviewFrameTimeCode string              `json:"previewFrameTimeCode,omitempty"`
 	MimeType             string              `json:"mimeType,omitempty"`
 	VideoURL             string              `json:"videoUrl,omitempty"`

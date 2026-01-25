@@ -16,6 +16,32 @@ type AppStoreVersionAttributes struct {
 	CreatedDate     string   `json:"createdDate,omitempty"`
 }
 
+// AppStoreVersionCreateAttributes describes app store version create payload attributes.
+type AppStoreVersionCreateAttributes struct {
+	Platform            Platform `json:"platform"`
+	VersionString       string   `json:"versionString"`
+	Copyright           string   `json:"copyright,omitempty"`
+	ReleaseType         string   `json:"releaseType,omitempty"`
+	EarliestReleaseDate string   `json:"earliestReleaseDate,omitempty"`
+}
+
+// AppStoreVersionCreateRelationships describes relationships for app store version create requests.
+type AppStoreVersionCreateRelationships struct {
+	App *Relationship `json:"app"`
+}
+
+// AppStoreVersionCreateData is the data portion of an app store version create request.
+type AppStoreVersionCreateData struct {
+	Type          ResourceType                        `json:"type"`
+	Attributes    AppStoreVersionCreateAttributes     `json:"attributes"`
+	Relationships *AppStoreVersionCreateRelationships `json:"relationships"`
+}
+
+// AppStoreVersionCreateRequest is a request to create an app store version.
+type AppStoreVersionCreateRequest struct {
+	Data AppStoreVersionCreateData `json:"data"`
+}
+
 // AppStoreVersionsResponse is the response from app store versions endpoints.
 type AppStoreVersionsResponse = Response[AppStoreVersionAttributes]
 
@@ -189,6 +215,41 @@ func (c *Client) GetAppStoreVersion(ctx context.Context, versionID string) (*App
 	return &response, nil
 }
 
+// CreateAppStoreVersion creates a new app store version for an app.
+func (c *Client) CreateAppStoreVersion(ctx context.Context, appID string, attrs AppStoreVersionCreateAttributes) (*AppStoreVersionResponse, error) {
+	payload := AppStoreVersionCreateRequest{
+		Data: AppStoreVersionCreateData{
+			Type:       ResourceTypeAppStoreVersions,
+			Attributes: attrs,
+			Relationships: &AppStoreVersionCreateRelationships{
+				App: &Relationship{
+					Data: ResourceData{
+						Type: ResourceTypeApps,
+						ID:   strings.TrimSpace(appID),
+					},
+				},
+			},
+		},
+	}
+
+	body, err := BuildRequestBody(payload)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := c.do(ctx, "POST", "/v1/appStoreVersions", body)
+	if err != nil {
+		return nil, err
+	}
+
+	var response AppStoreVersionResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &response, nil
+}
+
 // AttachBuildToVersion attaches a build to an app store version.
 func (c *Client) AttachBuildToVersion(ctx context.Context, versionID, buildID string) error {
 	request := AppStoreVersionBuildRelationshipUpdateRequest{
@@ -296,67 +357,6 @@ func (c *Client) GetAppStoreVersionSubmission(ctx context.Context, id string) (*
 func (c *Client) DeleteAppStoreVersionSubmission(ctx context.Context, id string) error {
 	_, err := c.do(ctx, "DELETE", fmt.Sprintf("/v1/appStoreVersionSubmissions/%s", id), nil)
 	return err
-}
-
-// AppStoreVersionCreateAttributes describes attributes for creating an app store version.
-type AppStoreVersionCreateAttributes struct {
-	Platform      Platform `json:"platform"`
-	VersionString string   `json:"versionString"`
-	Copyright     string   `json:"copyright,omitempty"`
-	ReleaseType   string   `json:"releaseType,omitempty"`
-	EarliestReleaseDate string `json:"earliestReleaseDate,omitempty"`
-}
-
-// AppStoreVersionCreateRelationships describes relationships for creating an app store version.
-type AppStoreVersionCreateRelationships struct {
-	App *Relationship `json:"app"`
-}
-
-// AppStoreVersionCreateData is the data portion of an app store version create request.
-type AppStoreVersionCreateData struct {
-	Type          ResourceType                        `json:"type"`
-	Attributes    AppStoreVersionCreateAttributes     `json:"attributes"`
-	Relationships AppStoreVersionCreateRelationships  `json:"relationships"`
-}
-
-// AppStoreVersionCreateRequest is a request to create an app store version.
-type AppStoreVersionCreateRequest struct {
-	Data AppStoreVersionCreateData `json:"data"`
-}
-
-// CreateAppStoreVersion creates a new app store version.
-func (c *Client) CreateAppStoreVersion(ctx context.Context, appID string, attrs AppStoreVersionCreateAttributes) (*AppStoreVersionResponse, error) {
-	request := AppStoreVersionCreateRequest{
-		Data: AppStoreVersionCreateData{
-			Type:       ResourceTypeAppStoreVersions,
-			Attributes: attrs,
-			Relationships: AppStoreVersionCreateRelationships{
-				App: &Relationship{
-					Data: ResourceData{
-						Type: ResourceTypeApps,
-						ID:   appID,
-					},
-				},
-			},
-		},
-	}
-
-	body, err := BuildRequestBody(request)
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := c.do(ctx, "POST", "/v1/appStoreVersions", body)
-	if err != nil {
-		return nil, err
-	}
-
-	var response AppStoreVersionResponse
-	if err := json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	return &response, nil
 }
 
 // DeleteAppStoreVersion deletes an app store version (only for versions in PREPARE_FOR_SUBMISSION state).

@@ -749,16 +749,14 @@ func TestAppScreenshotCreateRequest_JSON(t *testing.T) {
 
 func TestAppScreenshotUpdateRequest_JSON(t *testing.T) {
 	uploaded := true
+	checksum := "abc123"
 	req := AppScreenshotUpdateRequest{
 		Data: AppScreenshotUpdateData{
 			Type: ResourceTypeAppScreenshots,
 			ID:   "SCREENSHOT_ID_123",
 			Attributes: &AppScreenshotUpdateAttributes{
-				Uploaded: &uploaded,
-				SourceFileChecksum: &Checksum{
-					Hash:      "abc123",
-					Algorithm: ChecksumAlgorithmMD5,
-				},
+				Uploaded:           &uploaded,
+				SourceFileChecksum: &checksum,
 			},
 		},
 	}
@@ -778,11 +776,8 @@ func TestAppScreenshotUpdateRequest_JSON(t *testing.T) {
 			Type       string `json:"type"`
 			ID         string `json:"id"`
 			Attributes struct {
-				Uploaded           bool `json:"uploaded"`
-				SourceFileChecksum struct {
-					Hash      string `json:"hash"`
-					Algorithm string `json:"algorithm"`
-				} `json:"sourceFileChecksum"`
+				Uploaded           bool   `json:"uploaded"`
+				SourceFileChecksum string `json:"sourceFileChecksum"`
 			} `json:"attributes"`
 		} `json:"data"`
 	}
@@ -799,8 +794,8 @@ func TestAppScreenshotUpdateRequest_JSON(t *testing.T) {
 	if !parsed.Data.Attributes.Uploaded {
 		t.Fatalf("expected uploaded=true")
 	}
-	if parsed.Data.Attributes.SourceFileChecksum.Algorithm != "MD5" {
-		t.Fatalf("expected checksum algorithm=MD5, got %q", parsed.Data.Attributes.SourceFileChecksum.Algorithm)
+	if parsed.Data.Attributes.SourceFileChecksum != "abc123" {
+		t.Fatalf("expected checksum=abc123, got %q", parsed.Data.Attributes.SourceFileChecksum)
 	}
 }
 
@@ -938,16 +933,14 @@ func TestAppPreviewCreateRequest_JSON(t *testing.T) {
 
 func TestAppPreviewUpdateRequest_JSON(t *testing.T) {
 	uploaded := true
+	checksum := "def456"
 	req := AppPreviewUpdateRequest{
 		Data: AppPreviewUpdateData{
 			Type: ResourceTypeAppPreviews,
 			ID:   "PREVIEW_ID_123",
 			Attributes: &AppPreviewUpdateAttributes{
-				Uploaded: &uploaded,
-				SourceFileChecksum: &Checksum{
-					Hash:      "def456",
-					Algorithm: ChecksumAlgorithmMD5,
-				},
+				Uploaded:           &uploaded,
+				SourceFileChecksum: &checksum,
 			},
 		},
 	}
@@ -967,11 +960,8 @@ func TestAppPreviewUpdateRequest_JSON(t *testing.T) {
 			Type       string `json:"type"`
 			ID         string `json:"id"`
 			Attributes struct {
-				Uploaded           bool `json:"uploaded"`
-				SourceFileChecksum struct {
-					Hash      string `json:"hash"`
-					Algorithm string `json:"algorithm"`
-				} `json:"sourceFileChecksum"`
+				Uploaded           bool   `json:"uploaded"`
+				SourceFileChecksum string `json:"sourceFileChecksum"`
 			} `json:"attributes"`
 		} `json:"data"`
 	}
@@ -988,8 +978,8 @@ func TestAppPreviewUpdateRequest_JSON(t *testing.T) {
 	if !parsed.Data.Attributes.Uploaded {
 		t.Fatalf("expected uploaded=true")
 	}
-	if parsed.Data.Attributes.SourceFileChecksum.Algorithm != "MD5" {
-		t.Fatalf("expected checksum algorithm=MD5, got %q", parsed.Data.Attributes.SourceFileChecksum.Algorithm)
+	if parsed.Data.Attributes.SourceFileChecksum != "def456" {
+		t.Fatalf("expected checksum=def456, got %q", parsed.Data.Attributes.SourceFileChecksum)
 	}
 }
 

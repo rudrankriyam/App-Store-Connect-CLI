@@ -42,8 +42,8 @@ type AppScreenshotCreateRequest struct {
 
 // AppScreenshotUpdateAttributes describes screenshot update attributes.
 type AppScreenshotUpdateAttributes struct {
-	SourceFileChecksum *Checksum `json:"sourceFileChecksum,omitempty"`
-	Uploaded           *bool     `json:"uploaded,omitempty"`
+	SourceFileChecksum *string `json:"sourceFileChecksum,omitempty"`
+	Uploaded           *bool   `json:"uploaded,omitempty"`
 }
 
 // AppScreenshotUpdateData is the data portion of a screenshot update request.
@@ -94,8 +94,8 @@ type AppPreviewCreateRequest struct {
 
 // AppPreviewUpdateAttributes describes preview update attributes.
 type AppPreviewUpdateAttributes struct {
-	SourceFileChecksum *Checksum `json:"sourceFileChecksum,omitempty"`
-	Uploaded           *bool     `json:"uploaded,omitempty"`
+	SourceFileChecksum *string `json:"sourceFileChecksum,omitempty"`
+	Uploaded           *bool   `json:"uploaded,omitempty"`
 }
 
 // AppPreviewUpdateData is the data portion of a preview update request.
@@ -239,14 +239,14 @@ func (c *Client) CreateAppScreenshot(ctx context.Context, setID string, fileName
 }
 
 // UpdateAppScreenshot updates a screenshot (used to commit upload).
-func (c *Client) UpdateAppScreenshot(ctx context.Context, screenshotID string, uploaded bool, checksum *Checksum) (*AppScreenshotResponse, error) {
+func (c *Client) UpdateAppScreenshot(ctx context.Context, screenshotID string, uploaded bool, checksumHash string) (*AppScreenshotResponse, error) {
 	payload := AppScreenshotUpdateRequest{
 		Data: AppScreenshotUpdateData{
 			Type: ResourceTypeAppScreenshots,
 			ID:   screenshotID,
 			Attributes: &AppScreenshotUpdateAttributes{
 				Uploaded:           &uploaded,
-				SourceFileChecksum: checksum,
+				SourceFileChecksum: &checksumHash,
 			},
 		},
 	}
@@ -406,14 +406,14 @@ func (c *Client) CreateAppPreview(ctx context.Context, setID string, fileName st
 }
 
 // UpdateAppPreview updates a preview (used to commit upload).
-func (c *Client) UpdateAppPreview(ctx context.Context, previewID string, uploaded bool, checksum *Checksum) (*AppPreviewResponse, error) {
+func (c *Client) UpdateAppPreview(ctx context.Context, previewID string, uploaded bool, checksumHash string) (*AppPreviewResponse, error) {
 	payload := AppPreviewUpdateRequest{
 		Data: AppPreviewUpdateData{
 			Type: ResourceTypeAppPreviews,
 			ID:   previewID,
 			Attributes: &AppPreviewUpdateAttributes{
 				Uploaded:           &uploaded,
-				SourceFileChecksum: checksum,
+				SourceFileChecksum: &checksumHash,
 			},
 		},
 	}

@@ -255,6 +255,24 @@ func (c *Client) GetAppAvailabilityV2(ctx context.Context, appID string) (*AppAv
 	return &response, nil
 }
 
+// GetTerritoryAvailabilities retrieves territory availabilities for an availability ID.
+func (c *Client) GetTerritoryAvailabilities(ctx context.Context, availabilityID string) (*TerritoryAvailabilitiesResponse, error) {
+	availabilityID = strings.TrimSpace(availabilityID)
+	path := fmt.Sprintf("/v2/appAvailabilities/%s/territoryAvailabilities", availabilityID)
+
+	data, err := c.do(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var response TerritoryAvailabilitiesResponse
+	if err := json.Unmarshal(data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse territory availabilities response: %w", err)
+	}
+
+	return &response, nil
+}
+
 // CreateAppAvailabilityV2 creates or updates app availability.
 func (c *Client) CreateAppAvailabilityV2(ctx context.Context, appID string, attrs AppAvailabilityV2CreateAttributes) (*AppAvailabilityV2Response, error) {
 	appID = strings.TrimSpace(appID)
@@ -333,24 +351,6 @@ func (c *Client) CreateAppAvailabilityV2(ctx context.Context, appID string, attr
 	var response AppAvailabilityV2Response
 	if err := json.Unmarshal(data, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse app availability response: %w", err)
-	}
-
-	return &response, nil
-}
-
-// GetTerritoryAvailabilities retrieves territory availabilities for an availability ID.
-func (c *Client) GetTerritoryAvailabilities(ctx context.Context, availabilityID string) (*TerritoryAvailabilitiesResponse, error) {
-	availabilityID = strings.TrimSpace(availabilityID)
-	path := fmt.Sprintf("/v2/appAvailabilities/%s/territoryAvailabilities", availabilityID)
-
-	data, err := c.do(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var response TerritoryAvailabilitiesResponse
-	if err := json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse territory availabilities response: %w", err)
 	}
 
 	return &response, nil

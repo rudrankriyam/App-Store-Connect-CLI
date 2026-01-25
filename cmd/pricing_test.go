@@ -22,6 +22,30 @@ func TestPricingPricePointsCommand_MissingApp(t *testing.T) {
 	}
 }
 
+func TestPricingPricePointsGetCommand_MissingPricePoint(t *testing.T) {
+	cmd := PricingPricePointsGetCommand()
+
+	if err := cmd.FlagSet.Parse([]string{}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	if err := cmd.Exec(context.Background(), []string{}); err != flag.ErrHelp {
+		t.Fatalf("expected flag.ErrHelp when --price-point is missing, got %v", err)
+	}
+}
+
+func TestPricingPricePointsEqualizationsCommand_MissingPricePoint(t *testing.T) {
+	cmd := PricingPricePointsEqualizationsCommand()
+
+	if err := cmd.FlagSet.Parse([]string{}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	if err := cmd.Exec(context.Background(), []string{}); err != flag.ErrHelp {
+		t.Fatalf("expected flag.ErrHelp when --price-point is missing, got %v", err)
+	}
+}
+
 func TestPricingScheduleGetCommand_MissingApp(t *testing.T) {
 	t.Setenv("ASC_APP_ID", "")
 	cmd := PricingScheduleGetCommand()
@@ -32,6 +56,30 @@ func TestPricingScheduleGetCommand_MissingApp(t *testing.T) {
 
 	if err := cmd.Exec(context.Background(), []string{}); err != flag.ErrHelp {
 		t.Fatalf("expected flag.ErrHelp when --app is missing, got %v", err)
+	}
+}
+
+func TestPricingScheduleManualPricesCommand_MissingSchedule(t *testing.T) {
+	cmd := PricingScheduleManualPricesCommand()
+
+	if err := cmd.FlagSet.Parse([]string{}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	if err := cmd.Exec(context.Background(), []string{}); err != flag.ErrHelp {
+		t.Fatalf("expected flag.ErrHelp when --schedule is missing, got %v", err)
+	}
+}
+
+func TestPricingScheduleAutomaticPricesCommand_MissingSchedule(t *testing.T) {
+	cmd := PricingScheduleAutomaticPricesCommand()
+
+	if err := cmd.FlagSet.Parse([]string{}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	if err := cmd.Exec(context.Background(), []string{}); err != flag.ErrHelp {
+		t.Fatalf("expected flag.ErrHelp when --schedule is missing, got %v", err)
 	}
 }
 
@@ -93,6 +141,18 @@ func TestPricingAvailabilityGetCommand_MissingApp(t *testing.T) {
 	}
 }
 
+func TestPricingAvailabilityTerritoryAvailabilitiesCommand_MissingAvailability(t *testing.T) {
+	cmd := PricingAvailabilityTerritoryAvailabilitiesCommand()
+
+	if err := cmd.FlagSet.Parse([]string{}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	if err := cmd.Exec(context.Background(), []string{}); err != flag.ErrHelp {
+		t.Fatalf("expected flag.ErrHelp when --availability is missing, got %v", err)
+	}
+}
+
 func TestPricingAvailabilitySetCommand_MissingFlags(t *testing.T) {
 	t.Setenv("ASC_APP_ID", "")
 
@@ -126,9 +186,14 @@ func TestPricingCommands_DefaultOutputJSON(t *testing.T) {
 	}{
 		{"territories list", PricingTerritoriesListCommand},
 		{"price-points", PricingPricePointsCommand},
+		{"price-points get", PricingPricePointsGetCommand},
+		{"price-points equalizations", PricingPricePointsEqualizationsCommand},
 		{"schedule get", PricingScheduleGetCommand},
 		{"schedule create", PricingScheduleCreateCommand},
+		{"schedule manual-prices", PricingScheduleManualPricesCommand},
+		{"schedule automatic-prices", PricingScheduleAutomaticPricesCommand},
 		{"availability get", PricingAvailabilityGetCommand},
+		{"availability territory-availabilities", PricingAvailabilityTerritoryAvailabilitiesCommand},
 		{"availability set", PricingAvailabilitySetCommand},
 	}
 

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 )
 
@@ -58,9 +59,9 @@ func TestUploadAssetFromFileUploadsChunks(t *testing.T) {
 	}
 	defer file.Close()
 
-	call := 0
+	var call int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		call++
+		atomic.AddInt32(&call, 1)
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			t.Fatalf("read body: %v", err)
@@ -89,7 +90,7 @@ func TestUploadAssetFromFileUploadsChunks(t *testing.T) {
 	if err := UploadAssetFromFile(context.Background(), file, 6, ops); err != nil {
 		t.Fatalf("UploadAssetFromFile() error: %v", err)
 	}
-	if call != 2 {
+	if atomic.LoadInt32(&call) != 2 {
 		t.Fatalf("expected 2 upload calls, got %d", call)
 	}
 }

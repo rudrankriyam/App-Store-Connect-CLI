@@ -624,7 +624,7 @@ func uploadScreenshotAsset(ctx context.Context, client *asc.Client, setID, fileP
 		return asc.AssetUploadResultItem{}, err
 	}
 
-	if _, err := client.UpdateAppScreenshot(ctx, created.Data.ID, true, checksum); err != nil {
+	if _, err := client.UpdateAppScreenshot(ctx, created.Data.ID, true, checksum.Hash); err != nil {
 		return asc.AssetUploadResultItem{}, err
 	}
 
@@ -679,7 +679,7 @@ func uploadPreviewAsset(ctx context.Context, client *asc.Client, setID, filePath
 		return asc.AssetUploadResultItem{}, err
 	}
 
-	if _, err := client.UpdateAppPreview(ctx, created.Data.ID, true, checksum); err != nil {
+	if _, err := client.UpdateAppPreview(ctx, created.Data.ID, true, checksum.Hash); err != nil {
 		return asc.AssetUploadResultItem{}, err
 	}
 

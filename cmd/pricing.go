@@ -25,10 +25,15 @@ Examples:
   asc pricing territories list
   asc pricing price-points --app "123456789"
   asc pricing price-points --app "123456789" --territory "USA"
+  asc pricing price-points get --price-point "PRICE_POINT_ID"
+  asc pricing price-points equalizations --price-point "PRICE_POINT_ID"
   asc pricing schedule get --app "123456789"
   asc pricing schedule create --app "123456789" --price-point "PRICE_POINT_ID" --start-date "2024-03-01"
+  asc pricing schedule manual-prices --schedule "SCHEDULE_ID"
+  asc pricing schedule automatic-prices --schedule "SCHEDULE_ID"
   asc pricing availability get --app "123456789"
-  asc pricing availability set --app "123456789" --territory "USA,GBR,DEU" --available true`,
+  asc pricing availability set --app "123456789" --territory "USA,GBR,DEU" --available true
+  asc pricing availability territory-availabilities --availability "AVAILABILITY_ID"`,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{
 			PricingTerritoriesCommand(),
@@ -145,16 +150,22 @@ func PricingPricePointsCommand() *ffcli.Command {
 
 	return &ffcli.Command{
 		Name:       "price-points",
-		ShortUsage: "asc pricing price-points [flags]",
-		ShortHelp:  "List app price points for an app.",
+		ShortUsage: "asc pricing price-points [subcommand] [flags]",
+		ShortHelp:  "List and inspect app price points.",
 		LongHelp: `List app price points for an app.
 
 Examples:
   asc pricing price-points --app "123456789"
   asc pricing price-points --app "123456789" --territory "USA"
-  asc pricing price-points --app "123456789" --paginate`,
+  asc pricing price-points --app "123456789" --paginate
+  asc pricing price-points get --price-point "PRICE_POINT_ID"
+  asc pricing price-points equalizations --price-point "PRICE_POINT_ID"`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
+		Subcommands: []*ffcli.Command{
+			PricingPricePointsGetCommand(),
+			PricingPricePointsEqualizationsCommand(),
+		},
 		Exec: func(ctx context.Context, args []string) error {
 			if *limit != 0 && (*limit < 1 || *limit > 200) {
 				return fmt.Errorf("pricing price-points: --limit must be between 1 and 200")
@@ -210,6 +221,92 @@ Examples:
 	}
 }
 
+// PricingPricePointsGetCommand returns the price point get subcommand.
+func PricingPricePointsGetCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("pricing price-points get", flag.ExitOnError)
+
+	pricePointID := fs.String("price-point", "", "App price point ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "get",
+		ShortUsage: "asc pricing price-points get --price-point PRICE_POINT_ID",
+		ShortHelp:  "Get a single app price point.",
+		LongHelp: `Get a single app price point.
+
+Examples:
+  asc pricing price-points get --price-point "PRICE_POINT_ID"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			trimmedPricePointID := strings.TrimSpace(*pricePointID)
+			if trimmedPricePointID == "" {
+				fmt.Fprintln(os.Stderr, "Error: --price-point is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("pricing price-points get: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			resp, err := client.GetAppPricePoint(requestCtx, trimmedPricePointID)
+			if err != nil {
+				return fmt.Errorf("pricing price-points get: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// PricingPricePointsEqualizationsCommand returns the price point equalizations subcommand.
+func PricingPricePointsEqualizationsCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("pricing price-points equalizations", flag.ExitOnError)
+
+	pricePointID := fs.String("price-point", "", "App price point ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "equalizations",
+		ShortUsage: "asc pricing price-points equalizations --price-point PRICE_POINT_ID",
+		ShortHelp:  "List equalized price points for a price point.",
+		LongHelp: `List equalized price points for a price point.
+
+Examples:
+  asc pricing price-points equalizations --price-point "PRICE_POINT_ID"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			trimmedPricePointID := strings.TrimSpace(*pricePointID)
+			if trimmedPricePointID == "" {
+				fmt.Fprintln(os.Stderr, "Error: --price-point is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("pricing price-points equalizations: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			resp, err := client.GetAppPricePointEqualizations(requestCtx, trimmedPricePointID)
+			if err != nil {
+				return fmt.Errorf("pricing price-points equalizations: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
 // PricingScheduleCommand returns the pricing schedule command group.
 func PricingScheduleCommand() *ffcli.Command {
 	return &ffcli.Command{
@@ -220,11 +317,15 @@ func PricingScheduleCommand() *ffcli.Command {
 
 Examples:
   asc pricing schedule get --app "123456789"
-  asc pricing schedule create --app "123456789" --price-point "PRICE_POINT_ID" --start-date "2024-03-01"`,
+  asc pricing schedule create --app "123456789" --price-point "PRICE_POINT_ID" --start-date "2024-03-01"
+  asc pricing schedule manual-prices --schedule "SCHEDULE_ID"
+  asc pricing schedule automatic-prices --schedule "SCHEDULE_ID"`,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{
 			PricingScheduleGetCommand(),
 			PricingScheduleCreateCommand(),
+			PricingScheduleManualPricesCommand(),
+			PricingScheduleAutomaticPricesCommand(),
 		},
 		Exec: func(ctx context.Context, args []string) error {
 			return flag.ErrHelp
@@ -336,6 +437,92 @@ Examples:
 	}
 }
 
+// PricingScheduleManualPricesCommand returns the schedule manual-prices subcommand.
+func PricingScheduleManualPricesCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("pricing schedule manual-prices", flag.ExitOnError)
+
+	scheduleID := fs.String("schedule", "", "App price schedule ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "manual-prices",
+		ShortUsage: "asc pricing schedule manual-prices --schedule SCHEDULE_ID",
+		ShortHelp:  "List manual prices for a schedule.",
+		LongHelp: `List manual prices for a schedule.
+
+Examples:
+  asc pricing schedule manual-prices --schedule "SCHEDULE_ID"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			trimmedScheduleID := strings.TrimSpace(*scheduleID)
+			if trimmedScheduleID == "" {
+				fmt.Fprintln(os.Stderr, "Error: --schedule is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("pricing schedule manual-prices: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			resp, err := client.GetAppPriceScheduleManualPrices(requestCtx, trimmedScheduleID)
+			if err != nil {
+				return fmt.Errorf("pricing schedule manual-prices: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// PricingScheduleAutomaticPricesCommand returns the schedule automatic-prices subcommand.
+func PricingScheduleAutomaticPricesCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("pricing schedule automatic-prices", flag.ExitOnError)
+
+	scheduleID := fs.String("schedule", "", "App price schedule ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "automatic-prices",
+		ShortUsage: "asc pricing schedule automatic-prices --schedule SCHEDULE_ID",
+		ShortHelp:  "List automatic prices for a schedule.",
+		LongHelp: `List automatic prices for a schedule.
+
+Examples:
+  asc pricing schedule automatic-prices --schedule "SCHEDULE_ID"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			trimmedScheduleID := strings.TrimSpace(*scheduleID)
+			if trimmedScheduleID == "" {
+				fmt.Fprintln(os.Stderr, "Error: --schedule is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("pricing schedule automatic-prices: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			resp, err := client.GetAppPriceScheduleAutomaticPrices(requestCtx, trimmedScheduleID)
+			if err != nil {
+				return fmt.Errorf("pricing schedule automatic-prices: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
 // PricingAvailabilityCommand returns the availability command group.
 func PricingAvailabilityCommand() *ffcli.Command {
 	return &ffcli.Command{
@@ -346,10 +533,12 @@ func PricingAvailabilityCommand() *ffcli.Command {
 
 Examples:
   asc pricing availability get --app "123456789"
-  asc pricing availability set --app "123456789" --territory "USA,GBR,DEU" --available true`,
+  asc pricing availability set --app "123456789" --territory "USA,GBR,DEU" --available true
+  asc pricing availability territory-availabilities --availability "AVAILABILITY_ID"`,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{
 			PricingAvailabilityGetCommand(),
+			PricingAvailabilityTerritoryAvailabilitiesCommand(),
 			PricingAvailabilitySetCommand(),
 		},
 		Exec: func(ctx context.Context, args []string) error {
@@ -394,6 +583,49 @@ Examples:
 			resp, err := client.GetAppAvailabilityV2(requestCtx, resolvedAppID)
 			if err != nil {
 				return fmt.Errorf("pricing availability get: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// PricingAvailabilityTerritoryAvailabilitiesCommand returns the availability territory-availabilities subcommand.
+func PricingAvailabilityTerritoryAvailabilitiesCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("pricing availability territory-availabilities", flag.ExitOnError)
+
+	availabilityID := fs.String("availability", "", "App availability ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "territory-availabilities",
+		ShortUsage: "asc pricing availability territory-availabilities --availability AVAILABILITY_ID",
+		ShortHelp:  "List territory availabilities for an app availability.",
+		LongHelp: `List territory availabilities for an app availability.
+
+Examples:
+  asc pricing availability territory-availabilities --availability "AVAILABILITY_ID"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			trimmedAvailabilityID := strings.TrimSpace(*availabilityID)
+			if trimmedAvailabilityID == "" {
+				fmt.Fprintln(os.Stderr, "Error: --availability is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("pricing availability territory-availabilities: %w", err)
+			}
+
+			requestCtx, cancel := contextWithTimeout(ctx)
+			defer cancel()
+
+			resp, err := client.GetTerritoryAvailabilities(requestCtx, trimmedAvailabilityID)
+			if err != nil {
+				return fmt.Errorf("pricing availability territory-availabilities: %w", err)
 			}
 
 			return printOutput(resp, *output, *pretty)
