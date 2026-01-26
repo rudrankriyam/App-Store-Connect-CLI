@@ -108,7 +108,6 @@ Examples:
 				requestCtx,
 				client,
 				bundleIDResp.Data.ID,
-				bundle,
 				profType,
 				result.CertificateIDs,
 				splitCSV(*deviceIDs),
@@ -211,10 +210,11 @@ func findCertificates(ctx context.Context, client *asc.Client, profileType, cert
 	return &asc.CertificatesResponse{Data: all, Links: links}, nil
 }
 
-func findOrCreateProfile(ctx context.Context, client *asc.Client, bundleIDResourceID, bundleIdentifier, profileType string, certIDs, deviceIDs []string, createMissing bool) (*asc.ProfileResponse, bool, error) {
+func findOrCreateProfile(ctx context.Context, client *asc.Client, bundleIDResourceID, profileType string, certIDs, deviceIDs []string, createMissing bool) (*asc.ProfileResponse, bool, error) {
 	next := ""
 	for {
 		profiles, err := client.GetProfiles(ctx,
+			asc.WithProfilesFilterBundleID(bundleIDResourceID),
 			asc.WithProfilesFilterType(profileType),
 			asc.WithProfilesNextURL(next),
 		)
@@ -226,17 +226,7 @@ func findOrCreateProfile(ctx context.Context, client *asc.Client, bundleIDResour
 			if profile.Attributes.ProfileState != asc.ProfileStateActive {
 				continue
 			}
-			content := strings.TrimSpace(profile.Attributes.ProfileContent)
-			if content == "" {
-				continue
-			}
-			decoded, err := decodeBase64Content("profile", content)
-			if err != nil {
-				return nil, false, err
-			}
-			if strings.Contains(string(decoded), bundleIdentifier) {
-				return &asc.ProfileResponse{Data: profile}, false, nil
-			}
+			return &asc.ProfileResponse{Data: profile}, false, nil
 		}
 
 		if strings.TrimSpace(profiles.Links.Next) == "" {
@@ -322,12 +312,20 @@ func writeBinaryFile(path string, data []byte) error {
 		}
 		return err
 	}
-	defer file.Close()
+	cleanup := func() {
+		_ = file.Close()
+		_ = os.Remove(path)
+	}
 
 	if _, err := file.Write(data); err != nil {
+		cleanup()
 		return err
 	}
-	return file.Sync()
+	if err := file.Sync(); err != nil {
+		cleanup()
+		return err
+	}
+	return file.Close()
 }
 
 func extractIDs[T any](items []asc.Resource[T]) []string {
