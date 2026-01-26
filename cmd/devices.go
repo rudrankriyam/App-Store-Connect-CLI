@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/peterbourgon/ff/v3/ffcli"
@@ -210,7 +212,8 @@ func DevicesRegisterCommand() *ffcli.Command {
 	fs := flag.NewFlagSet("register", flag.ExitOnError)
 
 	name := fs.String("name", "", "Device name")
-	udid := fs.String("udid", "", "Device UDID")
+	udid := fs.String("udid", "", "Device UDID (required unless --udid-from-system)")
+	udidFromSystem := fs.Bool("udid-from-system", false, "Use local macOS hardware UUID as UDID (macOS only)")
 	platform := fs.String("platform", "", "Device platform: "+strings.Join(devicePlatformList(), ", "))
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
@@ -222,7 +225,8 @@ func DevicesRegisterCommand() *ffcli.Command {
 		LongHelp: `Register a new device.
 
 Examples:
-  asc devices register --name "iPhone 15" --udid "UDID" --platform IOS`,
+  asc devices register --name "iPhone 15" --udid "UDID" --platform IOS
+  asc devices register --name "My Mac" --udid-from-system --platform MAC_OS`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
@@ -233,17 +237,36 @@ Examples:
 			}
 
 			udidValue := strings.TrimSpace(*udid)
+			if *udidFromSystem && udidValue != "" {
+				fmt.Fprintln(os.Stderr, "Error: --udid and --udid-from-system are mutually exclusive")
+				return flag.ErrHelp
+			}
+			if *udidFromSystem {
+				localUDID, err := localMacUDID()
+				if err != nil {
+					return fmt.Errorf("devices register: %w", err)
+				}
+				udidValue = localUDID
+			}
 			if udidValue == "" {
 				fmt.Fprintln(os.Stderr, "Error: --udid is required")
 				return flag.ErrHelp
 			}
 
-			if strings.TrimSpace(*platform) == "" {
+			platformValue := strings.TrimSpace(*platform)
+			if *udidFromSystem && platformValue == "" {
+				platformValue = "MAC_OS"
+			}
+			if platformValue == "" {
 				fmt.Fprintln(os.Stderr, "Error: --platform is required")
 				return flag.ErrHelp
 			}
+			if *udidFromSystem && strings.ToUpper(platformValue) != "MAC_OS" {
+				fmt.Fprintln(os.Stderr, "Error: --udid-from-system requires --platform MAC_OS")
+				return flag.ErrHelp
+			}
 
-			platformValue, err := normalizeDevicePlatform(*platform)
+			platformValue, err := normalizeDevicePlatform(platformValue)
 			if err != nil {
 				return fmt.Errorf("devices register: %w", err)
 			}
@@ -417,4 +440,28 @@ func deviceStatusList() []string {
 
 func deviceFieldsList() []string {
 	return []string{"addedDate", "deviceClass", "model", "name", "platform", "status", "udid"}
+}
+
+func localMacUDID() (string, error) {
+	if runtime.GOOS != "darwin" {
+		return "", fmt.Errorf("--udid-from-system is only supported on macOS")
+	}
+
+	output, err := exec.Command("ioreg", "-rd1", "-c", "IOPlatformExpertDevice").CombinedOutput()
+	if err != nil {
+		return "", fmt.Errorf("failed to read local hardware UUID: %w", err)
+	}
+
+	for _, line := range strings.Split(string(output), "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "\"IOPlatformUUID\" = ") {
+			value := strings.TrimPrefix(line, "\"IOPlatformUUID\" = ")
+			value = strings.Trim(value, "\"")
+			if value != "" {
+				return value, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("unable to locate IOPlatformUUID in ioreg output")
 }

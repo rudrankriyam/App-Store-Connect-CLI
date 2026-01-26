@@ -291,10 +291,9 @@ func buildBundleIDsQuery(query *bundleIDsQuery) string {
 	return values.Encode()
 }
 
-func buildBundleIDCapabilitiesQuery(query *bundleIDCapabilitiesQuery) string {
-	values := url.Values{}
-	addLimit(values, query.limit)
-	return values.Encode()
+func buildBundleIDCapabilitiesQuery(_ *bundleIDCapabilitiesQuery) string {
+	// Bundle ID capabilities endpoint does not support limit/pagination params.
+	return ""
 }
 
 func buildCertificatesQuery(query *certificatesQuery) string {

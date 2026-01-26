@@ -42,6 +42,18 @@ func TestDevicesRegisterCommand_MissingPlatform(t *testing.T) {
 	}
 }
 
+func TestDevicesRegisterCommand_UDIDConflict(t *testing.T) {
+	cmd := DevicesRegisterCommand()
+
+	if err := cmd.FlagSet.Parse([]string{"--name", "Device", "--udid", "UDID", "--udid-from-system", "--platform", "MAC_OS"}); err != nil {
+		t.Fatalf("failed to parse flags: %v", err)
+	}
+
+	if err := cmd.Exec(context.Background(), []string{}); err != flag.ErrHelp {
+		t.Fatalf("expected flag.ErrHelp when udid flags conflict, got %v", err)
+	}
+}
+
 func TestDevicesUpdateCommand_MissingID(t *testing.T) {
 	cmd := DevicesUpdateCommand()
 

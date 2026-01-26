@@ -45,7 +45,6 @@ func BundleIDsCapabilitiesListCommand() *ffcli.Command {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
 
 	bundleID := fs.String("bundle", "", "Bundle ID")
-	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
 	next := fs.String("next", "", "Fetch next page using a links.next URL")
 	paginate := fs.Bool("paginate", false, "Automatically fetch all pages (aggregate results)")
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
@@ -63,9 +62,6 @@ Examples:
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
-			if *limit != 0 && (*limit < 1 || *limit > 200) {
-				return fmt.Errorf("bundle-ids capabilities list: --limit must be between 1 and 200")
-			}
 			if err := validateNextURL(*next); err != nil {
 				return fmt.Errorf("bundle-ids capabilities list: %w", err)
 			}
@@ -84,13 +80,11 @@ Examples:
 			defer cancel()
 
 			opts := []asc.BundleIDCapabilitiesOption{
-				asc.WithBundleIDCapabilitiesLimit(*limit),
 				asc.WithBundleIDCapabilitiesNextURL(*next),
 			}
 
 			if *paginate {
-				paginateOpts := append(opts, asc.WithBundleIDCapabilitiesLimit(200))
-				firstPage, err := client.GetBundleIDCapabilities(requestCtx, bundleValue, paginateOpts...)
+				firstPage, err := client.GetBundleIDCapabilities(requestCtx, bundleValue, opts...)
 				if err != nil {
 					return fmt.Errorf("bundle-ids capabilities list: failed to fetch: %w", err)
 				}
