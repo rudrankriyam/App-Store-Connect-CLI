@@ -267,6 +267,12 @@ func ListCredentials() ([]Credential, error) {
 			}
 			merged = append(merged, cred)
 		}
+	defaultName, _ := defaultName()
+	if strings.TrimSpace(defaultName) == "" && len(merged) > 1 {
+		for i := range merged {
+			merged[i].IsDefault = false
+		}
+	}
 		return merged, nil
 	}
 	if !isKeyringUnavailable(err) {
