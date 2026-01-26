@@ -211,13 +211,13 @@ func DevicesRegisterCommand() *ffcli.Command {
 
 	name := fs.String("name", "", "Device name")
 	udid := fs.String("udid", "", "Device UDID")
-	platform := fs.String("platform", "", "Device platform: "+strings.Join(devicePlatformList(), ", "))
+	platform := fs.String("platform", "", "Device platform: "+strings.Join(deviceRegisterPlatformList(), ", "))
 	output := fs.String("output", "json", "Output format: json (default), table, markdown")
 	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
 
 	return &ffcli.Command{
 		Name:       "register",
-		ShortUsage: "asc devices register --name NAME --udid UDID --platform " + strings.Join(devicePlatformList(), "|"),
+		ShortUsage: "asc devices register --name NAME --udid UDID --platform " + strings.Join(deviceRegisterPlatformList(), "|"),
 		ShortHelp:  "Register a new device.",
 		LongHelp: `Register a new device.
 
@@ -243,7 +243,7 @@ Examples:
 				return flag.ErrHelp
 			}
 
-			platformValue, err := normalizeDevicePlatform(*platform)
+			platformValue, err := normalizeDeviceRegisterPlatform(*platform)
 			if err != nil {
 				return fmt.Errorf("devices register: %w", err)
 			}
@@ -353,6 +353,20 @@ func normalizeDevicePlatform(value string) (string, error) {
 	return "", fmt.Errorf("--platform must be one of: %s", strings.Join(devicePlatformList(), ", "))
 }
 
+func normalizeDeviceRegisterPlatform(value string) (string, error) {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "", nil
+	}
+	normalized := strings.ToUpper(trimmed)
+	for _, platform := range deviceRegisterPlatformList() {
+		if normalized == platform {
+			return normalized, nil
+		}
+	}
+	return "", fmt.Errorf("--platform must be one of: %s", strings.Join(deviceRegisterPlatformList(), ", "))
+}
+
 func normalizeDevicePlatforms(values []string) ([]string, error) {
 	if len(values) == 0 {
 		return nil, nil
@@ -409,6 +423,10 @@ func normalizeDeviceFields(value string) ([]string, error) {
 
 func devicePlatformList() []string {
 	return []string{"IOS", "MAC_OS", "TV_OS", "VISION_OS"}
+}
+
+func deviceRegisterPlatformList() []string {
+	return []string{"IOS", "MAC_OS"}
 }
 
 func deviceStatusList() []string {
