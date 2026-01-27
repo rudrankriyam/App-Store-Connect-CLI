@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 // ResourceTypeAppStoreVersionReleaseRequests is the resource type for release requests.
@@ -40,6 +41,11 @@ type AppStoreVersionReleaseRequestRelationships struct {
 
 // CreateAppStoreVersionReleaseRequest creates a release request for an app store version.
 func (c *Client) CreateAppStoreVersionReleaseRequest(ctx context.Context, versionID string) (*AppStoreVersionReleaseRequestResponse, error) {
+	versionID = strings.TrimSpace(versionID)
+	if versionID == "" {
+		return nil, fmt.Errorf("version ID is required")
+	}
+
 	payload := AppStoreVersionReleaseRequestCreateRequest{
 		Data: AppStoreVersionReleaseRequestCreateData{
 			Type: ResourceTypeAppStoreVersionReleaseRequests,

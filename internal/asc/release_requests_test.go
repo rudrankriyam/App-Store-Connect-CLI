@@ -50,3 +50,14 @@ func TestCreateAppStoreVersionReleaseRequest(t *testing.T) {
 		t.Errorf("expected ID release-123, got %s", result.Data.ID)
 	}
 }
+
+func TestCreateAppStoreVersionReleaseRequestRequiresVersionID(t *testing.T) {
+	client := newTestClient(t, func(req *http.Request) {
+		t.Fatal("unexpected request")
+	}, jsonResponse(http.StatusOK, `{"data":{}}`))
+
+	_, err := client.CreateAppStoreVersionReleaseRequest(context.Background(), " ")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
