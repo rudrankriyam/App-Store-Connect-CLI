@@ -292,6 +292,48 @@ func TestBuildAppStoreReviewAttachmentsQuery(t *testing.T) {
 	}
 }
 
+func TestBuildAppEncryptionDeclarationsQuery(t *testing.T) {
+	query := &appEncryptionDeclarationsQuery{}
+	opts := []AppEncryptionDeclarationsOption{
+		WithAppEncryptionDeclarationsBuildIDs([]string{"build-1", " build-2 "}),
+		WithAppEncryptionDeclarationsFields([]string{"appDescription", "exempt"}),
+		WithAppEncryptionDeclarationsDocumentFields([]string{"fileName", "fileSize"}),
+		WithAppEncryptionDeclarationsInclude([]string{"app", "builds"}),
+		WithAppEncryptionDeclarationsLimit(5),
+		WithAppEncryptionDeclarationsBuildLimit(10),
+	}
+	for _, opt := range opts {
+		opt(query)
+	}
+	query.appID = "app-1"
+
+	values, err := url.ParseQuery(buildAppEncryptionDeclarationsQuery(query))
+	if err != nil {
+		t.Fatalf("failed to parse query: %v", err)
+	}
+	if got := values.Get("filter[app]"); got != "app-1" {
+		t.Fatalf("expected filter[app]=app-1, got %q", got)
+	}
+	if got := values.Get("filter[builds]"); got != "build-1,build-2" {
+		t.Fatalf("expected filter[builds]=build-1,build-2, got %q", got)
+	}
+	if got := values.Get("fields[appEncryptionDeclarations]"); got != "appDescription,exempt" {
+		t.Fatalf("expected fields[appEncryptionDeclarations]=appDescription,exempt, got %q", got)
+	}
+	if got := values.Get("fields[appEncryptionDeclarationDocuments]"); got != "fileName,fileSize" {
+		t.Fatalf("expected fields[appEncryptionDeclarationDocuments]=fileName,fileSize, got %q", got)
+	}
+	if got := values.Get("include"); got != "app,builds" {
+		t.Fatalf("expected include=app,builds, got %q", got)
+	}
+	if got := values.Get("limit"); got != "5" {
+		t.Fatalf("expected limit=5, got %q", got)
+	}
+	if got := values.Get("limit[builds]"); got != "10" {
+		t.Fatalf("expected limit[builds]=10, got %q", got)
+	}
+}
+
 func TestBuildBetaTestersQuery(t *testing.T) {
 	query := &betaTestersQuery{}
 	opts := []BetaTestersOption{

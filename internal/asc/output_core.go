@@ -181,6 +181,12 @@ func PrintMarkdown(data interface{}) error {
 		return printAppStoreReviewAttachmentMarkdown(v)
 	case *RoutingAppCoverageResponse:
 		return printRoutingAppCoverageMarkdown(v)
+	case *AppEncryptionDeclarationsResponse:
+		return printAppEncryptionDeclarationsMarkdown(v)
+	case *AppEncryptionDeclarationResponse:
+		return printAppEncryptionDeclarationMarkdown(v)
+	case *AppEncryptionDeclarationDocumentResponse:
+		return printAppEncryptionDeclarationDocumentMarkdown(v)
 	case *BetaRecruitmentCriterionOptionsResponse:
 		return printBetaRecruitmentCriterionOptionsMarkdown(v)
 	case *BetaRecruitmentCriteriaResponse:
@@ -337,6 +343,8 @@ func PrintMarkdown(data interface{}) error {
 		return printAppStoreReviewAttachmentDeleteResultMarkdown(v)
 	case *RoutingAppCoverageDeleteResult:
 		return printRoutingAppCoverageDeleteResultMarkdown(v)
+	case *AppEncryptionDeclarationBuildsUpdateResult:
+		return printAppEncryptionDeclarationBuildsUpdateResultMarkdown(v)
 	default:
 		return PrintJSON(data)
 	}
@@ -505,6 +513,12 @@ func PrintTable(data interface{}) error {
 		return printAppStoreReviewAttachmentTable(v)
 	case *RoutingAppCoverageResponse:
 		return printRoutingAppCoverageTable(v)
+	case *AppEncryptionDeclarationsResponse:
+		return printAppEncryptionDeclarationsTable(v)
+	case *AppEncryptionDeclarationResponse:
+		return printAppEncryptionDeclarationTable(v)
+	case *AppEncryptionDeclarationDocumentResponse:
+		return printAppEncryptionDeclarationDocumentTable(v)
 	case *BetaRecruitmentCriterionOptionsResponse:
 		return printBetaRecruitmentCriterionOptionsTable(v)
 	case *BetaRecruitmentCriteriaResponse:
@@ -661,6 +675,8 @@ func PrintTable(data interface{}) error {
 		return printAppStoreReviewAttachmentDeleteResultTable(v)
 	case *RoutingAppCoverageDeleteResult:
 		return printRoutingAppCoverageDeleteResultTable(v)
+	case *AppEncryptionDeclarationBuildsUpdateResult:
+		return printAppEncryptionDeclarationBuildsUpdateResultTable(v)
 	default:
 		return PrintJSON(data)
 	}

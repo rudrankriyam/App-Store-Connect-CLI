@@ -210,6 +210,16 @@ type appStoreReviewAttachmentsQuery struct {
 	include             []string
 }
 
+type appEncryptionDeclarationsQuery struct {
+	listQuery
+	appID          string
+	buildIDs       []string
+	fields         []string
+	documentFields []string
+	include        []string
+	buildLimit     int
+}
+
 type betaAppReviewDetailsQuery struct {
 	listQuery
 }
@@ -440,6 +450,28 @@ func buildAppStoreReviewAttachmentsQuery(query *appStoreReviewAttachmentsQuery) 
 	addCSV(values, "fields[appStoreReviewDetails]", query.fieldsReviewDetails)
 	addCSV(values, "include", query.include)
 	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildAppEncryptionDeclarationsQuery(query *appEncryptionDeclarationsQuery) string {
+	values := url.Values{}
+	if strings.TrimSpace(query.appID) != "" {
+		values.Set("filter[app]", strings.TrimSpace(query.appID))
+	}
+	addCSV(values, "filter[builds]", query.buildIDs)
+	addCSV(values, "fields[appEncryptionDeclarations]", query.fields)
+	addCSV(values, "fields[appEncryptionDeclarationDocuments]", query.documentFields)
+	addCSV(values, "include", query.include)
+	addLimit(values, query.limit)
+	if query.buildLimit > 0 {
+		values.Set("limit[builds]", strconv.Itoa(query.buildLimit))
+	}
+	return values.Encode()
+}
+
+func buildAppEncryptionDeclarationDocumentFieldsQuery(fields []string) string {
+	values := url.Values{}
+	addCSV(values, "fields[appEncryptionDeclarationDocuments]", fields)
 	return values.Encode()
 }
 

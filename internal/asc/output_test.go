@@ -2559,3 +2559,111 @@ func TestPrintTable_RoutingAppCoverageDeleteResult(t *testing.T) {
 		t.Fatalf("expected id in output, got: %s", output)
 	}
 }
+
+func TestPrintTable_AppEncryptionDeclarations(t *testing.T) {
+	exempt := true
+	proprietary := false
+	thirdParty := true
+	french := true
+	resp := &AppEncryptionDeclarationsResponse{
+		Data: []Resource[AppEncryptionDeclarationAttributes]{
+			{
+				ID:   "decl-1",
+				Type: ResourceTypeAppEncryptionDeclarations,
+				Attributes: AppEncryptionDeclarationAttributes{
+					AppEncryptionDeclarationState:   AppEncryptionDeclarationStateApproved,
+					Exempt:                          &exempt,
+					ContainsProprietaryCryptography: &proprietary,
+					ContainsThirdPartyCryptography:  &thirdParty,
+					AvailableOnFrenchStore:          &french,
+					CreatedDate:                     "2026-01-28T00:00:00Z",
+					CodeValue:                       "EI12345",
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Proprietary Crypto") {
+		t.Fatalf("expected proprietary crypto header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "APPROVED") {
+		t.Fatalf("expected state in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_AppEncryptionDeclaration(t *testing.T) {
+	exempt := false
+	resp := &AppEncryptionDeclarationResponse{
+		Data: Resource[AppEncryptionDeclarationAttributes]{
+			ID:   "decl-1",
+			Type: ResourceTypeAppEncryptionDeclarations,
+			Attributes: AppEncryptionDeclarationAttributes{
+				AppDescription:                 "Uses TLS",
+				Exempt:                         &exempt,
+				AppEncryptionDeclarationState:  AppEncryptionDeclarationStateCreated,
+				ContainsThirdPartyCryptography: &exempt,
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| Field | Value |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "App Description") {
+		t.Fatalf("expected app description field in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_AppEncryptionDeclarationDocument(t *testing.T) {
+	state := "COMPLETE"
+	resp := &AppEncryptionDeclarationDocumentResponse{
+		Data: Resource[AppEncryptionDeclarationDocumentAttributes]{
+			ID:   "doc-1",
+			Type: ResourceTypeAppEncryptionDeclarationDocuments,
+			Attributes: AppEncryptionDeclarationDocumentAttributes{
+				FileName:           "export.pdf",
+				FileSize:           2048,
+				SourceFileChecksum: "abcd1234",
+				AssetDeliveryState: &AppMediaAssetState{State: &state},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "File Name") {
+		t.Fatalf("expected file name header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "export.pdf") {
+		t.Fatalf("expected file name in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_AppEncryptionDeclarationBuildsUpdateResult(t *testing.T) {
+	result := &AppEncryptionDeclarationBuildsUpdateResult{
+		DeclarationID: "decl-1",
+		BuildIDs:      []string{"build-1", "build-2"},
+		Action:        "assigned",
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "Declaration ID") {
+		t.Fatalf("expected declaration id header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "decl-1") {
+		t.Fatalf("expected declaration id in output, got: %s", output)
+	}
+}

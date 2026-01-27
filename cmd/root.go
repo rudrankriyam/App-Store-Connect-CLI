@@ -72,6 +72,7 @@ func RootCommand(version string) *ffcli.Command {
 			CategoriesCommand(),
 			AgeRatingCommand(),
 			AccessibilityCommand(),
+			EncryptionCommand(),
 			MigrateCommand(),
 			VersionCommand(version),
 		},

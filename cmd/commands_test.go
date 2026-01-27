@@ -1540,6 +1540,129 @@ func TestRoutingCoverageValidationErrors(t *testing.T) {
 	}
 }
 
+func TestEncryptionValidationErrors(t *testing.T) {
+	t.Setenv("ASC_BYPASS_KEYCHAIN", "1")
+	t.Setenv("ASC_KEY_ID", "")
+	t.Setenv("ASC_ISSUER_ID", "")
+	t.Setenv("ASC_PRIVATE_KEY_PATH", "")
+	t.Setenv("ASC_CONFIG_PATH", filepath.Join(t.TempDir(), "nonexistent.json"))
+
+	tests := []struct {
+		name     string
+		args     []string
+		wantErr  string
+		wantHelp bool
+	}{
+		{
+			name:     "encryption declarations list missing app",
+			args:     []string{"encryption", "declarations", "list"},
+			wantErr:  "--app is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations get missing id",
+			args:     []string{"encryption", "declarations", "get"},
+			wantErr:  "--id is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations create missing app",
+			args:     []string{"encryption", "declarations", "create", "--app-description", "Uses TLS", "--contains-proprietary-cryptography=false", "--contains-third-party-cryptography=true", "--available-on-french-store=true"},
+			wantErr:  "--app is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations create missing description",
+			args:     []string{"encryption", "declarations", "create", "--app", "APP_ID", "--contains-proprietary-cryptography=false", "--contains-third-party-cryptography=true", "--available-on-french-store=true"},
+			wantErr:  "--app-description is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations create missing proprietary flag",
+			args:     []string{"encryption", "declarations", "create", "--app", "APP_ID", "--app-description", "Uses TLS", "--contains-third-party-cryptography=true", "--available-on-french-store=true"},
+			wantErr:  "--contains-proprietary-cryptography is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations create missing third-party flag",
+			args:     []string{"encryption", "declarations", "create", "--app", "APP_ID", "--app-description", "Uses TLS", "--contains-proprietary-cryptography=false", "--available-on-french-store=true"},
+			wantErr:  "--contains-third-party-cryptography is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations create missing french store flag",
+			args:     []string{"encryption", "declarations", "create", "--app", "APP_ID", "--app-description", "Uses TLS", "--contains-proprietary-cryptography=false", "--contains-third-party-cryptography=true"},
+			wantErr:  "--available-on-french-store is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations assign-builds missing id",
+			args:     []string{"encryption", "declarations", "assign-builds", "--build", "BUILD_ID"},
+			wantErr:  "--id is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption declarations assign-builds missing build",
+			args:     []string{"encryption", "declarations", "assign-builds", "--id", "DECL_ID"},
+			wantErr:  "--build is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption documents get missing id",
+			args:     []string{"encryption", "documents", "get"},
+			wantErr:  "--id is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption documents upload missing declaration",
+			args:     []string{"encryption", "documents", "upload", "--file", "export.pdf"},
+			wantErr:  "--declaration is required",
+			wantHelp: true,
+		},
+		{
+			name:     "encryption documents upload missing file",
+			args:     []string{"encryption", "documents", "upload", "--declaration", "DECL_ID"},
+			wantErr:  "--file is required",
+			wantHelp: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := RootCommand("1.2.3")
+			root.FlagSet.SetOutput(io.Discard)
+
+			stdout, stderr := captureOutput(t, func() {
+				if err := root.Parse(test.args); err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
+				err := root.Run(context.Background())
+				if test.wantHelp {
+					if !errors.Is(err, flag.ErrHelp) {
+						t.Fatalf("expected ErrHelp, got %v", err)
+					}
+				} else {
+					if err == nil {
+						t.Fatal("expected error, got nil")
+					}
+					if errors.Is(err, flag.ErrHelp) {
+						t.Fatalf("expected non-help error, got %v", err)
+					}
+				}
+			})
+
+			if test.wantHelp {
+				if stdout != "" {
+					t.Fatalf("expected empty stdout, got %q", stdout)
+				}
+				if !strings.Contains(stderr, test.wantErr) {
+					t.Fatalf("expected error %q, got %q", test.wantErr, stderr)
+				}
+			}
+		})
+	}
+}
+
 func TestTestFlightBetaDetailsValidationErrors(t *testing.T) {
 	tests := []struct {
 		name    string

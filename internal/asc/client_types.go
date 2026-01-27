@@ -23,6 +23,8 @@ const (
 	ResourceTypeCertificates                         ResourceType = "certificates"
 	ResourceTypeAppStoreVersions                     ResourceType = "appStoreVersions"
 	ResourceTypeRoutingAppCoverages                  ResourceType = "routingAppCoverages"
+	ResourceTypeAppEncryptionDeclarations            ResourceType = "appEncryptionDeclarations"
+	ResourceTypeAppEncryptionDeclarationDocuments    ResourceType = "appEncryptionDeclarationDocuments"
 	ResourceTypeAppStoreVersionPromotions            ResourceType = "appStoreVersionPromotions"
 	ResourceTypeAppStoreVersionExperimentTreatments  ResourceType = "appStoreVersionExperimentTreatments"
 	ResourceTypePreReleaseVersions                   ResourceType = "preReleaseVersions"
