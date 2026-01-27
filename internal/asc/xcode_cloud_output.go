@@ -6,6 +6,16 @@ import (
 	"text/tabwriter"
 )
 
+// CiArtifactDownloadResult represents CLI output for artifact downloads.
+type CiArtifactDownloadResult struct {
+	ID           string `json:"id"`
+	FileName     string `json:"fileName,omitempty"`
+	FileType     string `json:"fileType,omitempty"`
+	FileSize     int    `json:"fileSize,omitempty"`
+	OutputPath   string `json:"outputPath"`
+	BytesWritten int64  `json:"bytesWritten,omitempty"`
+}
+
 func printXcodeCloudRunResultTable(result *XcodeCloudRunResult) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "Build Run ID\tBuild #\tWorkflow ID\tWorkflow Name\tGit Ref ID\tGit Ref Name\tProgress\tStatus\tStart Reason\tCreated")
@@ -218,4 +228,170 @@ func printCiBuildActionsMarkdown(resp *CiBuildActionsResponse) error {
 		)
 	}
 	return nil
+}
+
+func printCiArtifactsTable(resp *CiArtifactsResponse) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tName\tType\tSize\tDownload URL")
+	for _, item := range resp.Data {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\n",
+			item.ID,
+			item.Attributes.FileName,
+			item.Attributes.FileType,
+			item.Attributes.FileSize,
+			item.Attributes.DownloadURL,
+		)
+	}
+	return w.Flush()
+}
+
+func printCiArtifactsMarkdown(resp *CiArtifactsResponse) error {
+	fmt.Fprintln(os.Stdout, "| ID | Name | Type | Size | Download URL |")
+	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- | --- |")
+	for _, item := range resp.Data {
+		fmt.Fprintf(os.Stdout, "| %s | %s | %s | %d | %s |\n",
+			escapeMarkdown(item.ID),
+			escapeMarkdown(item.Attributes.FileName),
+			escapeMarkdown(item.Attributes.FileType),
+			item.Attributes.FileSize,
+			escapeMarkdown(item.Attributes.DownloadURL),
+		)
+	}
+	return nil
+}
+
+func printCiArtifactTable(resp *CiArtifactResponse) error {
+	return printCiArtifactsTable(&CiArtifactsResponse{Data: []CiArtifactResource{resp.Data}})
+}
+
+func printCiArtifactMarkdown(resp *CiArtifactResponse) error {
+	return printCiArtifactsMarkdown(&CiArtifactsResponse{Data: []CiArtifactResource{resp.Data}})
+}
+
+func printCiTestResultsTable(resp *CiTestResultsResponse) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tClass\tName\tStatus\tDuration")
+	for _, item := range resp.Data {
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			item.ID,
+			item.Attributes.ClassName,
+			item.Attributes.Name,
+			string(item.Attributes.Status),
+			formatTestDuration(item),
+		)
+	}
+	return w.Flush()
+}
+
+func printCiTestResultsMarkdown(resp *CiTestResultsResponse) error {
+	fmt.Fprintln(os.Stdout, "| ID | Class | Name | Status | Duration |")
+	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- | --- |")
+	for _, item := range resp.Data {
+		fmt.Fprintf(os.Stdout, "| %s | %s | %s | %s | %s |\n",
+			escapeMarkdown(item.ID),
+			escapeMarkdown(item.Attributes.ClassName),
+			escapeMarkdown(item.Attributes.Name),
+			escapeMarkdown(string(item.Attributes.Status)),
+			escapeMarkdown(formatTestDuration(item)),
+		)
+	}
+	return nil
+}
+
+func printCiTestResultTable(resp *CiTestResultResponse) error {
+	return printCiTestResultsTable(&CiTestResultsResponse{Data: []CiTestResultResource{resp.Data}})
+}
+
+func printCiTestResultMarkdown(resp *CiTestResultResponse) error {
+	return printCiTestResultsMarkdown(&CiTestResultsResponse{Data: []CiTestResultResource{resp.Data}})
+}
+
+func printCiIssuesTable(resp *CiIssuesResponse) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tType\tFile\tLine\tMessage")
+	for _, item := range resp.Data {
+		filePath, lineNumber := formatFileLocation(item.Attributes.FileSource)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
+			item.ID,
+			item.Attributes.IssueType,
+			filePath,
+			lineNumber,
+			item.Attributes.Message,
+		)
+	}
+	return w.Flush()
+}
+
+func printCiIssuesMarkdown(resp *CiIssuesResponse) error {
+	fmt.Fprintln(os.Stdout, "| ID | Type | File | Line | Message |")
+	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- | --- |")
+	for _, item := range resp.Data {
+		filePath, lineNumber := formatFileLocation(item.Attributes.FileSource)
+		fmt.Fprintf(os.Stdout, "| %s | %s | %s | %s | %s |\n",
+			escapeMarkdown(item.ID),
+			escapeMarkdown(item.Attributes.IssueType),
+			escapeMarkdown(filePath),
+			escapeMarkdown(lineNumber),
+			escapeMarkdown(item.Attributes.Message),
+		)
+	}
+	return nil
+}
+
+func printCiIssueTable(resp *CiIssueResponse) error {
+	return printCiIssuesTable(&CiIssuesResponse{Data: []CiIssueResource{resp.Data}})
+}
+
+func printCiIssueMarkdown(resp *CiIssueResponse) error {
+	return printCiIssuesMarkdown(&CiIssuesResponse{Data: []CiIssueResource{resp.Data}})
+}
+
+func printCiArtifactDownloadResultTable(result *CiArtifactDownloadResult) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "ID\tName\tType\tSize\tBytes Written\tOutput Path")
+	fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%d\t%s\n",
+		result.ID,
+		result.FileName,
+		result.FileType,
+		result.FileSize,
+		result.BytesWritten,
+		result.OutputPath,
+	)
+	return w.Flush()
+}
+
+func printCiArtifactDownloadResultMarkdown(result *CiArtifactDownloadResult) error {
+	fmt.Fprintln(os.Stdout, "| ID | Name | Type | Size | Bytes Written | Output Path |")
+	fmt.Fprintln(os.Stdout, "| --- | --- | --- | --- | --- | --- |")
+	fmt.Fprintf(os.Stdout, "| %s | %s | %s | %d | %d | %s |\n",
+		escapeMarkdown(result.ID),
+		escapeMarkdown(result.FileName),
+		escapeMarkdown(result.FileType),
+		result.FileSize,
+		result.BytesWritten,
+		escapeMarkdown(result.OutputPath),
+	)
+	return nil
+}
+
+func formatTestDuration(result CiTestResultResource) string {
+	if len(result.Attributes.DestinationTestResults) == 0 {
+		return ""
+	}
+	duration := result.Attributes.DestinationTestResults[0].Duration
+	if duration <= 0 {
+		return ""
+	}
+	return fmt.Sprintf("%.2fs", duration)
+}
+
+func formatFileLocation(location *FileLocation) (string, string) {
+	if location == nil {
+		return "", ""
+	}
+	line := ""
+	if location.LineNumber > 0 {
+		line = fmt.Sprintf("%d", location.LineNumber)
+	}
+	return location.Path, line
 }

@@ -76,6 +76,10 @@ func PaginateAll(ctx context.Context, firstPage PaginatedResponse, fetchNext Pag
 		result = &AppPricePointsV3Response{Links: Links{}}
 	case *BuildsResponse:
 		result = &BuildsResponse{Links: Links{}}
+	case *BuildBundleFileSizesResponse:
+		result = &BuildBundleFileSizesResponse{Links: Links{}}
+	case *BetaAppClipInvocationsResponse:
+		result = &BetaAppClipInvocationsResponse{Links: Links{}}
 	case *SubscriptionOfferCodeOneTimeUseCodesResponse:
 		result = &SubscriptionOfferCodeOneTimeUseCodesResponse{Links: Links{}}
 	case *AppStoreVersionsResponse:
@@ -130,6 +134,14 @@ func PaginateAll(ctx context.Context, firstPage PaginatedResponse, fetchNext Pag
 		result = &ScmGitReferencesResponse{Links: Links{}}
 	case *CiBuildRunsResponse:
 		result = &CiBuildRunsResponse{Links: Links{}}
+	case *CiBuildActionsResponse:
+		result = &CiBuildActionsResponse{Links: Links{}}
+	case *CiArtifactsResponse:
+		result = &CiArtifactsResponse{Links: Links{}}
+	case *CiTestResultsResponse:
+		result = &CiTestResultsResponse{Links: Links{}}
+	case *CiIssuesResponse:
+		result = &CiIssuesResponse{Links: Links{}}
 	default:
 		return nil, fmt.Errorf("unsupported response type for pagination")
 	}
@@ -227,6 +239,10 @@ func typeOf(p PaginatedResponse) string {
 		return "AppPricePointsV3Response"
 	case *BuildsResponse:
 		return "BuildsResponse"
+	case *BuildBundleFileSizesResponse:
+		return "BuildBundleFileSizesResponse"
+	case *BetaAppClipInvocationsResponse:
+		return "BetaAppClipInvocationsResponse"
 	case *SubscriptionOfferCodeOneTimeUseCodesResponse:
 		return "SubscriptionOfferCodeOneTimeUseCodesResponse"
 	case *AppStoreVersionsResponse:

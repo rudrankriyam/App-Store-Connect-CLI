@@ -351,6 +351,71 @@ func TestBuildsGroupValidationErrors(t *testing.T) {
 	}
 }
 
+func TestBuildBundlesValidationErrors(t *testing.T) {
+	t.Setenv("ASC_BYPASS_KEYCHAIN", "1")
+	t.Setenv("ASC_KEY_ID", "")
+	t.Setenv("ASC_ISSUER_ID", "")
+	t.Setenv("ASC_PRIVATE_KEY_PATH", "")
+	t.Setenv("ASC_APP_ID", "")
+	t.Setenv("ASC_CONFIG_PATH", filepath.Join(t.TempDir(), "nonexistent.json"))
+
+	tests := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "build-bundles list missing build",
+			args:    []string{"build-bundles", "list"},
+			wantErr: "Error: --build is required",
+		},
+		{
+			name:    "build-bundles file-sizes list missing id",
+			args:    []string{"build-bundles", "file-sizes", "list"},
+			wantErr: "Error: --id is required",
+		},
+		{
+			name:    "build-bundles app-clip cache-status get missing id",
+			args:    []string{"build-bundles", "app-clip", "cache-status", "get"},
+			wantErr: "Error: --id is required",
+		},
+		{
+			name:    "build-bundles app-clip debug-status get missing id",
+			args:    []string{"build-bundles", "app-clip", "debug-status", "get"},
+			wantErr: "Error: --id is required",
+		},
+		{
+			name:    "build-bundles app-clip invocations list missing id",
+			args:    []string{"build-bundles", "app-clip", "invocations", "list"},
+			wantErr: "Error: --id is required",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := RootCommand("1.2.3")
+			root.FlagSet.SetOutput(io.Discard)
+
+			stdout, stderr := captureOutput(t, func() {
+				if err := root.Parse(test.args); err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
+				err := root.Run(context.Background())
+				if !errors.Is(err, flag.ErrHelp) {
+					t.Fatalf("expected ErrHelp, got %v", err)
+				}
+			})
+
+			if stdout != "" {
+				t.Fatalf("expected empty stdout, got %q", stdout)
+			}
+			if !strings.Contains(stderr, test.wantErr) {
+				t.Fatalf("expected error %q, got %q", test.wantErr, stderr)
+			}
+		})
+	}
+}
+
 func TestBetaManagementValidationErrors(t *testing.T) {
 	t.Setenv("ASC_APP_ID", "")
 
@@ -1347,6 +1412,93 @@ func TestReviewCommandAttachmentsValidationErrors(t *testing.T) {
 		{
 			name:     "review attachments-delete missing confirm",
 			args:     []string{"review", "attachments-delete", "--id", "ATTACHMENT_ID"},
+			wantErr:  "--confirm is required",
+			wantHelp: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := RootCommand("1.2.3")
+			root.FlagSet.SetOutput(io.Discard)
+
+			stdout, stderr := captureOutput(t, func() {
+				if err := root.Parse(test.args); err != nil {
+					t.Fatalf("parse error: %v", err)
+				}
+				err := root.Run(context.Background())
+				if test.wantHelp {
+					if !errors.Is(err, flag.ErrHelp) {
+						t.Fatalf("expected ErrHelp, got %v", err)
+					}
+				} else {
+					if err == nil {
+						t.Fatal("expected error, got nil")
+					}
+					if errors.Is(err, flag.ErrHelp) {
+						t.Fatalf("expected non-help error, got %v", err)
+					}
+				}
+			})
+
+			if test.wantHelp {
+				if stdout != "" {
+					t.Fatalf("expected empty stdout, got %q", stdout)
+				}
+				if !strings.Contains(stderr, test.wantErr) {
+					t.Fatalf("expected error %q, got %q", test.wantErr, stderr)
+				}
+			}
+		})
+	}
+}
+
+func TestRoutingCoverageValidationErrors(t *testing.T) {
+	t.Setenv("ASC_BYPASS_KEYCHAIN", "1")
+	t.Setenv("ASC_KEY_ID", "")
+	t.Setenv("ASC_ISSUER_ID", "")
+	t.Setenv("ASC_PRIVATE_KEY_PATH", "")
+	t.Setenv("ASC_CONFIG_PATH", filepath.Join(t.TempDir(), "nonexistent.json"))
+
+	tests := []struct {
+		name     string
+		args     []string
+		wantErr  string
+		wantHelp bool
+	}{
+		{
+			name:     "routing-coverage get missing version id",
+			args:     []string{"routing-coverage", "get"},
+			wantErr:  "--version-id is required",
+			wantHelp: true,
+		},
+		{
+			name:     "routing-coverage info missing id",
+			args:     []string{"routing-coverage", "info"},
+			wantErr:  "--id is required",
+			wantHelp: true,
+		},
+		{
+			name:     "routing-coverage create missing version id",
+			args:     []string{"routing-coverage", "create", "--file", "coverage.geojson"},
+			wantErr:  "--version-id is required",
+			wantHelp: true,
+		},
+		{
+			name:     "routing-coverage create missing file",
+			args:     []string{"routing-coverage", "create", "--version-id", "VERSION_ID"},
+			wantErr:  "--file is required",
+			wantHelp: true,
+		},
+		{
+			name:     "routing-coverage delete missing id",
+			args:     []string{"routing-coverage", "delete", "--confirm"},
+			wantErr:  "--id is required",
+			wantHelp: true,
+		},
+		{
+			name:     "routing-coverage delete missing confirm",
+			args:     []string{"routing-coverage", "delete", "--id", "COVERAGE_ID"},
 			wantErr:  "--confirm is required",
 			wantHelp: true,
 		},
@@ -2605,6 +2757,46 @@ func TestXcodeCloudValidationErrors(t *testing.T) {
 			name:    "xcode-cloud build-runs missing workflow-id",
 			args:    []string{"xcode-cloud", "build-runs"},
 			wantErr: "--workflow-id is required",
+		},
+		{
+			name:    "xcode-cloud artifacts list missing action-id",
+			args:    []string{"xcode-cloud", "artifacts", "list"},
+			wantErr: "--action-id is required",
+		},
+		{
+			name:    "xcode-cloud artifacts get missing id",
+			args:    []string{"xcode-cloud", "artifacts", "get"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "xcode-cloud artifacts download missing id",
+			args:    []string{"xcode-cloud", "artifacts", "download", "--path", "./artifact.zip"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "xcode-cloud artifacts download missing path",
+			args:    []string{"xcode-cloud", "artifacts", "download", "--id", "ART_ID"},
+			wantErr: "--path is required",
+		},
+		{
+			name:    "xcode-cloud test-results list missing action-id",
+			args:    []string{"xcode-cloud", "test-results", "list"},
+			wantErr: "--action-id is required",
+		},
+		{
+			name:    "xcode-cloud test-results get missing id",
+			args:    []string{"xcode-cloud", "test-results", "get"},
+			wantErr: "--id is required",
+		},
+		{
+			name:    "xcode-cloud issues list missing action-id",
+			args:    []string{"xcode-cloud", "issues", "list"},
+			wantErr: "--action-id is required",
+		},
+		{
+			name:    "xcode-cloud issues get missing id",
+			args:    []string{"xcode-cloud", "issues", "get"},
+			wantErr: "--id is required",
 		},
 	}
 

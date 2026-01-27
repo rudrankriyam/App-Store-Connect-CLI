@@ -1755,3 +1755,147 @@ func TestPaginateAll_CiBuildRuns_ManyPages(t *testing.T) {
 		t.Fatalf("expected next link to be cleared, got %q", buildRuns.Links.Next)
 	}
 }
+
+func TestPaginateAll_CiArtifacts_ManyPages(t *testing.T) {
+	const totalPages = 4
+	const perPage = 3
+
+	makePage := func(page int) *CiArtifactsResponse {
+		data := make([]CiArtifactResource, 0, perPage)
+		for i := 0; i < perPage; i++ {
+			data = append(data, CiArtifactResource{
+				Type: ResourceTypeCiArtifacts,
+				ID:   fmt.Sprintf("artifact-%d-%d", page, i),
+			})
+		}
+		links := Links{}
+		if page < totalPages {
+			links.Next = fmt.Sprintf("page=%d", page+1)
+		}
+		return &CiArtifactsResponse{
+			Data:  data,
+			Links: links,
+		}
+	}
+
+	firstPage := makePage(1)
+	response, err := PaginateAll(context.Background(), firstPage, func(ctx context.Context, nextURL string) (PaginatedResponse, error) {
+		pageStr := strings.TrimPrefix(nextURL, "page=")
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid next URL %q", nextURL)
+		}
+		return makePage(page), nil
+	})
+	if err != nil {
+		t.Fatalf("PaginateAll() error: %v", err)
+	}
+
+	artifacts, ok := response.(*CiArtifactsResponse)
+	if !ok {
+		t.Fatalf("expected CiArtifactsResponse, got %T", response)
+	}
+	expected := totalPages * perPage
+	if len(artifacts.Data) != expected {
+		t.Fatalf("expected %d artifacts, got %d", expected, len(artifacts.Data))
+	}
+	if artifacts.Links.Next != "" {
+		t.Fatalf("expected next link to be cleared, got %q", artifacts.Links.Next)
+	}
+}
+
+func TestPaginateAll_CiTestResults_ManyPages(t *testing.T) {
+	const totalPages = 3
+	const perPage = 4
+
+	makePage := func(page int) *CiTestResultsResponse {
+		data := make([]CiTestResultResource, 0, perPage)
+		for i := 0; i < perPage; i++ {
+			data = append(data, CiTestResultResource{
+				Type: ResourceTypeCiTestResults,
+				ID:   fmt.Sprintf("test-%d-%d", page, i),
+			})
+		}
+		links := Links{}
+		if page < totalPages {
+			links.Next = fmt.Sprintf("page=%d", page+1)
+		}
+		return &CiTestResultsResponse{
+			Data:  data,
+			Links: links,
+		}
+	}
+
+	firstPage := makePage(1)
+	response, err := PaginateAll(context.Background(), firstPage, func(ctx context.Context, nextURL string) (PaginatedResponse, error) {
+		pageStr := strings.TrimPrefix(nextURL, "page=")
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid next URL %q", nextURL)
+		}
+		return makePage(page), nil
+	})
+	if err != nil {
+		t.Fatalf("PaginateAll() error: %v", err)
+	}
+
+	results, ok := response.(*CiTestResultsResponse)
+	if !ok {
+		t.Fatalf("expected CiTestResultsResponse, got %T", response)
+	}
+	expected := totalPages * perPage
+	if len(results.Data) != expected {
+		t.Fatalf("expected %d test results, got %d", expected, len(results.Data))
+	}
+	if results.Links.Next != "" {
+		t.Fatalf("expected next link to be cleared, got %q", results.Links.Next)
+	}
+}
+
+func TestPaginateAll_CiIssues_ManyPages(t *testing.T) {
+	const totalPages = 5
+	const perPage = 2
+
+	makePage := func(page int) *CiIssuesResponse {
+		data := make([]CiIssueResource, 0, perPage)
+		for i := 0; i < perPage; i++ {
+			data = append(data, CiIssueResource{
+				Type: ResourceTypeCiIssues,
+				ID:   fmt.Sprintf("issue-%d-%d", page, i),
+			})
+		}
+		links := Links{}
+		if page < totalPages {
+			links.Next = fmt.Sprintf("page=%d", page+1)
+		}
+		return &CiIssuesResponse{
+			Data:  data,
+			Links: links,
+		}
+	}
+
+	firstPage := makePage(1)
+	response, err := PaginateAll(context.Background(), firstPage, func(ctx context.Context, nextURL string) (PaginatedResponse, error) {
+		pageStr := strings.TrimPrefix(nextURL, "page=")
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			return nil, fmt.Errorf("invalid next URL %q", nextURL)
+		}
+		return makePage(page), nil
+	})
+	if err != nil {
+		t.Fatalf("PaginateAll() error: %v", err)
+	}
+
+	issues, ok := response.(*CiIssuesResponse)
+	if !ok {
+		t.Fatalf("expected CiIssuesResponse, got %T", response)
+	}
+	expected := totalPages * perPage
+	if len(issues.Data) != expected {
+		t.Fatalf("expected %d issues, got %d", expected, len(issues.Data))
+	}
+	if issues.Links.Next != "" {
+		t.Fatalf("expected next link to be cleared, got %q", issues.Links.Next)
+	}
+}

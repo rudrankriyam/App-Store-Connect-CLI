@@ -5,8 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -43,6 +45,9 @@ Examples:
 			XcodeCloudWorkflowsCommand(),
 			XcodeCloudBuildRunsCommand(),
 			XcodeCloudActionsCommand(),
+			XcodeCloudArtifactsCommand(),
+			XcodeCloudTestResultsCommand(),
+			XcodeCloudIssuesCommand(),
 		},
 		Exec: func(ctx context.Context, args []string) error {
 			return flag.ErrHelp
@@ -512,6 +517,525 @@ Examples:
 	}
 }
 
+// XcodeCloudArtifactsCommand returns the xcode-cloud artifacts command with subcommands.
+func XcodeCloudArtifactsCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("artifacts", flag.ExitOnError)
+
+	return &ffcli.Command{
+		Name:       "artifacts",
+		ShortUsage: "asc xcode-cloud artifacts <subcommand> [flags]",
+		ShortHelp:  "Manage Xcode Cloud build artifacts.",
+		LongHelp: `Manage Xcode Cloud build artifacts.
+
+Examples:
+  asc xcode-cloud artifacts list --action-id "ACTION_ID"
+  asc xcode-cloud artifacts get --id "ARTIFACT_ID"
+  asc xcode-cloud artifacts download --id "ARTIFACT_ID" --path ./artifact.zip`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Subcommands: []*ffcli.Command{
+			XcodeCloudArtifactsListCommand(),
+			XcodeCloudArtifactsGetCommand(),
+			XcodeCloudArtifactsDownloadCommand(),
+		},
+		Exec: func(ctx context.Context, args []string) error {
+			return flag.ErrHelp
+		},
+	}
+}
+
+// XcodeCloudArtifactsListCommand returns the xcode-cloud artifacts list subcommand.
+func XcodeCloudArtifactsListCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("list", flag.ExitOnError)
+
+	actionID := fs.String("action-id", "", "Build action ID to list artifacts for")
+	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
+	next := fs.String("next", "", "Fetch next page using a links.next URL")
+	paginate := fs.Bool("paginate", false, "Automatically fetch all pages (aggregate results)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "list",
+		ShortUsage: "asc xcode-cloud artifacts list [flags]",
+		ShortHelp:  "List artifacts for a build action.",
+		LongHelp: `List artifacts for a build action.
+
+Examples:
+  asc xcode-cloud artifacts list --action-id "ACTION_ID"
+  asc xcode-cloud artifacts list --action-id "ACTION_ID" --output table
+  asc xcode-cloud artifacts list --action-id "ACTION_ID" --limit 50
+  asc xcode-cloud artifacts list --action-id "ACTION_ID" --paginate`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if *limit != 0 && (*limit < 1 || *limit > 200) {
+				return fmt.Errorf("xcode-cloud artifacts list: --limit must be between 1 and 200")
+			}
+			if err := validateNextURL(*next); err != nil {
+				return fmt.Errorf("xcode-cloud artifacts list: %w", err)
+			}
+
+			resolvedActionID := strings.TrimSpace(*actionID)
+			if resolvedActionID == "" && strings.TrimSpace(*next) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --action-id is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts list: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			opts := []asc.CiArtifactsOption{
+				asc.WithCiArtifactsLimit(*limit),
+				asc.WithCiArtifactsNextURL(*next),
+			}
+
+			if *paginate {
+				paginateOpts := append(opts, asc.WithCiArtifactsLimit(200))
+				firstPage, err := client.GetCiBuildActionArtifacts(requestCtx, resolvedActionID, paginateOpts...)
+				if err != nil {
+					return fmt.Errorf("xcode-cloud artifacts list: failed to fetch: %w", err)
+				}
+
+				resp, err := asc.PaginateAll(requestCtx, firstPage, func(ctx context.Context, nextURL string) (asc.PaginatedResponse, error) {
+					return client.GetCiBuildActionArtifacts(ctx, resolvedActionID, asc.WithCiArtifactsNextURL(nextURL))
+				})
+				if err != nil {
+					return fmt.Errorf("xcode-cloud artifacts list: %w", err)
+				}
+
+				return printOutput(resp, *output, *pretty)
+			}
+
+			resp, err := client.GetCiBuildActionArtifacts(requestCtx, resolvedActionID, opts...)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts list: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// XcodeCloudArtifactsGetCommand returns the xcode-cloud artifacts get subcommand.
+func XcodeCloudArtifactsGetCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("get", flag.ExitOnError)
+
+	id := fs.String("id", "", "Artifact ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "get",
+		ShortUsage: "asc xcode-cloud artifacts get --id \"ARTIFACT_ID\"",
+		ShortHelp:  "Get details for a build artifact.",
+		LongHelp: `Get details for a build artifact.
+
+Examples:
+  asc xcode-cloud artifacts get --id "ARTIFACT_ID"
+  asc xcode-cloud artifacts get --id "ARTIFACT_ID" --output table`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			idValue := strings.TrimSpace(*id)
+			if idValue == "" {
+				fmt.Fprintln(os.Stderr, "Error: --id is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts get: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			resp, err := client.GetCiArtifact(requestCtx, idValue)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts get: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// XcodeCloudArtifactsDownloadCommand returns the xcode-cloud artifacts download subcommand.
+func XcodeCloudArtifactsDownloadCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("download", flag.ExitOnError)
+
+	id := fs.String("id", "", "Artifact ID")
+	path := fs.String("path", "", "Output file path for the artifact")
+	overwrite := fs.Bool("overwrite", false, "Overwrite existing file")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "download",
+		ShortUsage: "asc xcode-cloud artifacts download --id \"ARTIFACT_ID\" --path ./artifact.zip",
+		ShortHelp:  "Download a build artifact.",
+		LongHelp: `Download a build artifact.
+
+Examples:
+  asc xcode-cloud artifacts download --id "ARTIFACT_ID" --path ./artifact.zip
+  asc xcode-cloud artifacts download --id "ARTIFACT_ID" --path ./artifact.zip --overwrite`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			idValue := strings.TrimSpace(*id)
+			if idValue == "" {
+				fmt.Fprintln(os.Stderr, "Error: --id is required")
+				return flag.ErrHelp
+			}
+			pathValue := strings.TrimSpace(*path)
+			if pathValue == "" {
+				fmt.Fprintln(os.Stderr, "Error: --path is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts download: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			artifactResp, err := client.GetCiArtifact(requestCtx, idValue)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts download: failed to fetch artifact: %w", err)
+			}
+
+			downloadURL := strings.TrimSpace(artifactResp.Data.Attributes.DownloadURL)
+			if downloadURL == "" {
+				return fmt.Errorf("xcode-cloud artifacts download: artifact has no download URL")
+			}
+
+			download, err := client.DownloadCiArtifact(requestCtx, downloadURL)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts download: %w", err)
+			}
+			defer download.Body.Close()
+
+			bytesWritten, err := writeArtifactFile(pathValue, download.Body, *overwrite)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud artifacts download: %w", err)
+			}
+
+			result := &asc.CiArtifactDownloadResult{
+				ID:           artifactResp.Data.ID,
+				FileName:     artifactResp.Data.Attributes.FileName,
+				FileType:     artifactResp.Data.Attributes.FileType,
+				FileSize:     artifactResp.Data.Attributes.FileSize,
+				OutputPath:   pathValue,
+				BytesWritten: bytesWritten,
+			}
+
+			return printOutput(result, *output, *pretty)
+		},
+	}
+}
+
+// XcodeCloudTestResultsCommand returns the xcode-cloud test-results command with subcommands.
+func XcodeCloudTestResultsCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("test-results", flag.ExitOnError)
+
+	return &ffcli.Command{
+		Name:       "test-results",
+		ShortUsage: "asc xcode-cloud test-results <subcommand> [flags]",
+		ShortHelp:  "List Xcode Cloud test results.",
+		LongHelp: `List Xcode Cloud test results.
+
+Examples:
+  asc xcode-cloud test-results list --action-id "ACTION_ID"
+  asc xcode-cloud test-results get --id "TEST_RESULT_ID"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Subcommands: []*ffcli.Command{
+			XcodeCloudTestResultsListCommand(),
+			XcodeCloudTestResultsGetCommand(),
+		},
+		Exec: func(ctx context.Context, args []string) error {
+			return flag.ErrHelp
+		},
+	}
+}
+
+// XcodeCloudTestResultsListCommand returns the xcode-cloud test-results list subcommand.
+func XcodeCloudTestResultsListCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("list", flag.ExitOnError)
+
+	actionID := fs.String("action-id", "", "Build action ID to list test results for")
+	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
+	next := fs.String("next", "", "Fetch next page using a links.next URL")
+	paginate := fs.Bool("paginate", false, "Automatically fetch all pages (aggregate results)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "list",
+		ShortUsage: "asc xcode-cloud test-results list [flags]",
+		ShortHelp:  "List test results for a build action.",
+		LongHelp: `List test results for a build action.
+
+Examples:
+  asc xcode-cloud test-results list --action-id "ACTION_ID"
+  asc xcode-cloud test-results list --action-id "ACTION_ID" --output table
+  asc xcode-cloud test-results list --action-id "ACTION_ID" --limit 50
+  asc xcode-cloud test-results list --action-id "ACTION_ID" --paginate`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if *limit != 0 && (*limit < 1 || *limit > 200) {
+				return fmt.Errorf("xcode-cloud test-results list: --limit must be between 1 and 200")
+			}
+			if err := validateNextURL(*next); err != nil {
+				return fmt.Errorf("xcode-cloud test-results list: %w", err)
+			}
+
+			resolvedActionID := strings.TrimSpace(*actionID)
+			if resolvedActionID == "" && strings.TrimSpace(*next) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --action-id is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud test-results list: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			opts := []asc.CiTestResultsOption{
+				asc.WithCiTestResultsLimit(*limit),
+				asc.WithCiTestResultsNextURL(*next),
+			}
+
+			if *paginate {
+				paginateOpts := append(opts, asc.WithCiTestResultsLimit(200))
+				firstPage, err := client.GetCiBuildActionTestResults(requestCtx, resolvedActionID, paginateOpts...)
+				if err != nil {
+					return fmt.Errorf("xcode-cloud test-results list: failed to fetch: %w", err)
+				}
+
+				resp, err := asc.PaginateAll(requestCtx, firstPage, func(ctx context.Context, nextURL string) (asc.PaginatedResponse, error) {
+					return client.GetCiBuildActionTestResults(ctx, resolvedActionID, asc.WithCiTestResultsNextURL(nextURL))
+				})
+				if err != nil {
+					return fmt.Errorf("xcode-cloud test-results list: %w", err)
+				}
+
+				return printOutput(resp, *output, *pretty)
+			}
+
+			resp, err := client.GetCiBuildActionTestResults(requestCtx, resolvedActionID, opts...)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud test-results list: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// XcodeCloudTestResultsGetCommand returns the xcode-cloud test-results get subcommand.
+func XcodeCloudTestResultsGetCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("get", flag.ExitOnError)
+
+	id := fs.String("id", "", "Test result ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "get",
+		ShortUsage: "asc xcode-cloud test-results get --id \"TEST_RESULT_ID\"",
+		ShortHelp:  "Get details for a test result.",
+		LongHelp: `Get details for a test result.
+
+Examples:
+  asc xcode-cloud test-results get --id "TEST_RESULT_ID"
+  asc xcode-cloud test-results get --id "TEST_RESULT_ID" --output table`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			idValue := strings.TrimSpace(*id)
+			if idValue == "" {
+				fmt.Fprintln(os.Stderr, "Error: --id is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud test-results get: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			resp, err := client.GetCiTestResult(requestCtx, idValue)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud test-results get: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// XcodeCloudIssuesCommand returns the xcode-cloud issues command with subcommands.
+func XcodeCloudIssuesCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("issues", flag.ExitOnError)
+
+	return &ffcli.Command{
+		Name:       "issues",
+		ShortUsage: "asc xcode-cloud issues <subcommand> [flags]",
+		ShortHelp:  "List Xcode Cloud build issues.",
+		LongHelp: `List Xcode Cloud build issues.
+
+Examples:
+  asc xcode-cloud issues list --action-id "ACTION_ID"
+  asc xcode-cloud issues get --id "ISSUE_ID"`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Subcommands: []*ffcli.Command{
+			XcodeCloudIssuesListCommand(),
+			XcodeCloudIssuesGetCommand(),
+		},
+		Exec: func(ctx context.Context, args []string) error {
+			return flag.ErrHelp
+		},
+	}
+}
+
+// XcodeCloudIssuesListCommand returns the xcode-cloud issues list subcommand.
+func XcodeCloudIssuesListCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("list", flag.ExitOnError)
+
+	actionID := fs.String("action-id", "", "Build action ID to list issues for")
+	limit := fs.Int("limit", 0, "Maximum results per page (1-200)")
+	next := fs.String("next", "", "Fetch next page using a links.next URL")
+	paginate := fs.Bool("paginate", false, "Automatically fetch all pages (aggregate results)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "list",
+		ShortUsage: "asc xcode-cloud issues list [flags]",
+		ShortHelp:  "List issues for a build action.",
+		LongHelp: `List issues for a build action.
+
+Examples:
+  asc xcode-cloud issues list --action-id "ACTION_ID"
+  asc xcode-cloud issues list --action-id "ACTION_ID" --output table
+  asc xcode-cloud issues list --action-id "ACTION_ID" --limit 50
+  asc xcode-cloud issues list --action-id "ACTION_ID" --paginate`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			if *limit != 0 && (*limit < 1 || *limit > 200) {
+				return fmt.Errorf("xcode-cloud issues list: --limit must be between 1 and 200")
+			}
+			if err := validateNextURL(*next); err != nil {
+				return fmt.Errorf("xcode-cloud issues list: %w", err)
+			}
+
+			resolvedActionID := strings.TrimSpace(*actionID)
+			if resolvedActionID == "" && strings.TrimSpace(*next) == "" {
+				fmt.Fprintln(os.Stderr, "Error: --action-id is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud issues list: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			opts := []asc.CiIssuesOption{
+				asc.WithCiIssuesLimit(*limit),
+				asc.WithCiIssuesNextURL(*next),
+			}
+
+			if *paginate {
+				paginateOpts := append(opts, asc.WithCiIssuesLimit(200))
+				firstPage, err := client.GetCiBuildActionIssues(requestCtx, resolvedActionID, paginateOpts...)
+				if err != nil {
+					return fmt.Errorf("xcode-cloud issues list: failed to fetch: %w", err)
+				}
+
+				resp, err := asc.PaginateAll(requestCtx, firstPage, func(ctx context.Context, nextURL string) (asc.PaginatedResponse, error) {
+					return client.GetCiBuildActionIssues(ctx, resolvedActionID, asc.WithCiIssuesNextURL(nextURL))
+				})
+				if err != nil {
+					return fmt.Errorf("xcode-cloud issues list: %w", err)
+				}
+
+				return printOutput(resp, *output, *pretty)
+			}
+
+			resp, err := client.GetCiBuildActionIssues(requestCtx, resolvedActionID, opts...)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud issues list: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
+// XcodeCloudIssuesGetCommand returns the xcode-cloud issues get subcommand.
+func XcodeCloudIssuesGetCommand() *ffcli.Command {
+	fs := flag.NewFlagSet("get", flag.ExitOnError)
+
+	id := fs.String("id", "", "Issue ID")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "get",
+		ShortUsage: "asc xcode-cloud issues get --id \"ISSUE_ID\"",
+		ShortHelp:  "Get details for a build issue.",
+		LongHelp: `Get details for a build issue.
+
+Examples:
+  asc xcode-cloud issues get --id "ISSUE_ID"
+  asc xcode-cloud issues get --id "ISSUE_ID" --output table`,
+		FlagSet:   fs,
+		UsageFunc: DefaultUsageFunc,
+		Exec: func(ctx context.Context, args []string) error {
+			idValue := strings.TrimSpace(*id)
+			if idValue == "" {
+				fmt.Fprintln(os.Stderr, "Error: --id is required")
+				return flag.ErrHelp
+			}
+
+			client, err := getASCClient()
+			if err != nil {
+				return fmt.Errorf("xcode-cloud issues get: %w", err)
+			}
+
+			requestCtx, cancel := contextWithXcodeCloudTimeout(ctx, 0)
+			defer cancel()
+
+			resp, err := client.GetCiIssue(requestCtx, idValue)
+			if err != nil {
+				return fmt.Errorf("xcode-cloud issues get: %w", err)
+			}
+
+			return printOutput(resp, *output, *pretty)
+		},
+	}
+}
+
 // waitForBuildCompletion polls until the build run completes or times out.
 func waitForBuildCompletion(ctx context.Context, client *asc.Client, buildRunID string, pollInterval time.Duration, outputFormat string, pretty bool) error {
 	ticker := time.NewTicker(pollInterval)
@@ -569,6 +1093,77 @@ func buildStatusResult(resp *asc.CiBuildRunResponse) *asc.XcodeCloudStatusResult
 	}
 
 	return result
+}
+
+func writeArtifactFile(path string, reader io.Reader, overwrite bool) (int64, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return 0, err
+	}
+
+	if !overwrite {
+		file, err := openNewFileNoFollow(path, 0o600)
+		if err != nil {
+			if errors.Is(err, os.ErrExist) {
+				return 0, fmt.Errorf("output file already exists: %w", err)
+			}
+			return 0, err
+		}
+		defer file.Close()
+
+		n, err := io.Copy(file, reader)
+		if err != nil {
+			return 0, err
+		}
+		if err := file.Sync(); err != nil {
+			return 0, err
+		}
+		return n, nil
+	}
+
+	if info, err := os.Lstat(path); err == nil {
+		if info.Mode()&os.ModeSymlink != 0 {
+			return 0, fmt.Errorf("refusing to overwrite symlink %q", path)
+		}
+		if info.IsDir() {
+			return 0, fmt.Errorf("output path %q is a directory", path)
+		}
+		if err := os.Remove(path); err != nil {
+			return 0, err
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return 0, err
+	}
+
+	tempFile, err := os.CreateTemp(filepath.Dir(path), ".asc-artifact-*")
+	if err != nil {
+		return 0, err
+	}
+	defer tempFile.Close()
+
+	tempPath := tempFile.Name()
+	success := false
+	defer func() {
+		if !success {
+			_ = os.Remove(tempPath)
+		}
+	}()
+
+	n, err := io.Copy(tempFile, reader)
+	if err != nil {
+		return 0, err
+	}
+	if err := tempFile.Sync(); err != nil {
+		return 0, err
+	}
+	if err := tempFile.Close(); err != nil {
+		return 0, err
+	}
+	if err := os.Rename(tempPath, path); err != nil {
+		return 0, err
+	}
+
+	success = true
+	return n, nil
 }
 
 const defaultXcodeCloudTimeout = 30 * time.Minute

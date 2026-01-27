@@ -23,6 +23,15 @@ type NominationsOption func(*nominationsQuery)
 // BuildsOption is a functional option for GetBuilds.
 type BuildsOption func(*buildsQuery)
 
+// BuildBundlesOption is a functional option for GetBuildBundlesForBuild.
+type BuildBundlesOption func(*buildBundlesQuery)
+
+// BuildBundleFileSizesOption is a functional option for GetBuildBundleFileSizes.
+type BuildBundleFileSizesOption func(*buildBundleFileSizesQuery)
+
+// BetaAppClipInvocationsOption is a functional option for GetBuildBundleBetaAppClipInvocations.
+type BetaAppClipInvocationsOption func(*betaAppClipInvocationsQuery)
+
 // SubscriptionOfferCodeOneTimeUseCodesOption is a functional option for GetSubscriptionOfferCodeOneTimeUseCodes.
 type SubscriptionOfferCodeOneTimeUseCodesOption func(*subscriptionOfferCodeOneTimeUseCodesQuery)
 
@@ -640,6 +649,51 @@ func WithBuildsPreReleaseVersion(preReleaseVersionID string) BuildsOption {
 	return func(q *buildsQuery) {
 		if strings.TrimSpace(preReleaseVersionID) != "" {
 			q.preReleaseVersionID = strings.TrimSpace(preReleaseVersionID)
+		}
+	}
+}
+
+// WithBuildBundlesLimit sets the max number of included build bundles to return.
+func WithBuildBundlesLimit(limit int) BuildBundlesOption {
+	return func(q *buildBundlesQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithBuildBundleFileSizesLimit sets the max number of file size items to return.
+func WithBuildBundleFileSizesLimit(limit int) BuildBundleFileSizesOption {
+	return func(q *buildBundleFileSizesQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithBuildBundleFileSizesNextURL uses a next page URL directly.
+func WithBuildBundleFileSizesNextURL(next string) BuildBundleFileSizesOption {
+	return func(q *buildBundleFileSizesQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithBetaAppClipInvocationsLimit sets the max number of App Clip invocations to return.
+func WithBetaAppClipInvocationsLimit(limit int) BetaAppClipInvocationsOption {
+	return func(q *betaAppClipInvocationsQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithBetaAppClipInvocationsNextURL uses a next page URL directly.
+func WithBetaAppClipInvocationsNextURL(next string) BetaAppClipInvocationsOption {
+	return func(q *betaAppClipInvocationsQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
 		}
 	}
 }

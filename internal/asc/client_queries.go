@@ -81,6 +81,18 @@ type buildsQuery struct {
 	preReleaseVersionID string
 }
 
+type buildBundlesQuery struct {
+	limit int
+}
+
+type buildBundleFileSizesQuery struct {
+	listQuery
+}
+
+type betaAppClipInvocationsQuery struct {
+	listQuery
+}
+
 type subscriptionOfferCodeOneTimeUseCodesQuery struct {
 	listQuery
 }
@@ -508,6 +520,27 @@ func buildBetaAppReviewSubmissionsQuery(query *betaAppReviewSubmissionsQuery) st
 func buildBuildBetaDetailsQuery(query *buildBetaDetailsQuery) string {
 	values := url.Values{}
 	addCSV(values, "filter[build]", query.buildIDs)
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildBuildBundlesQuery(query *buildBundlesQuery) string {
+	values := url.Values{}
+	values.Set("include", "buildBundles")
+	if query.limit > 0 {
+		values.Set("limit[buildBundles]", strconv.Itoa(query.limit))
+	}
+	return values.Encode()
+}
+
+func buildBuildBundleFileSizesQuery(query *buildBundleFileSizesQuery) string {
+	values := url.Values{}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildBetaAppClipInvocationsQuery(query *betaAppClipInvocationsQuery) string {
+	values := url.Values{}
 	addLimit(values, query.limit)
 	return values.Encode()
 }

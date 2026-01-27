@@ -1046,6 +1046,254 @@ func TestPrintMarkdown_Builds(t *testing.T) {
 	}
 }
 
+func TestPrintTable_BuildBundles(t *testing.T) {
+	bundleID := "com.example.app"
+	bundleType := BuildBundleTypeApp
+	sdkBuild := "16A100"
+	platformBuild := "22A200"
+	fileName := "App.app"
+
+	resp := &BuildBundlesResponse{
+		Data: []Resource[BuildBundleAttributes]{
+			{
+				ID: "bundle-1",
+				Attributes: BuildBundleAttributes{
+					BundleID:      &bundleID,
+					BundleType:    &bundleType,
+					SDKBuild:      &sdkBuild,
+					PlatformBuild: &platformBuild,
+					FileName:      &fileName,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Bundle ID") {
+		t.Fatalf("expected bundle ID header, got: %s", output)
+	}
+	if !strings.Contains(output, "com.example.app") {
+		t.Fatalf("expected bundle ID in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_BuildBundles(t *testing.T) {
+	bundleID := "com.example.app"
+	bundleType := BuildBundleTypeAppClip
+	sdkBuild := "16A100"
+	platformBuild := "22A200"
+	fileName := "AppClip.app"
+
+	resp := &BuildBundlesResponse{
+		Data: []Resource[BuildBundleAttributes]{
+			{
+				ID: "bundle-2",
+				Attributes: BuildBundleAttributes{
+					BundleID:      &bundleID,
+					BundleType:    &bundleType,
+					SDKBuild:      &sdkBuild,
+					PlatformBuild: &platformBuild,
+					FileName:      &fileName,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| ID | Bundle ID | Type |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "APP_CLIP") {
+		t.Fatalf("expected bundle type in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_BuildBundleFileSizes(t *testing.T) {
+	deviceModel := "iPhone16,1"
+	osVersion := "18.0"
+	downloadBytes := int64(2048)
+	installBytes := int64(4096)
+
+	resp := &BuildBundleFileSizesResponse{
+		Data: []Resource[BuildBundleFileSizeAttributes]{
+			{
+				ID: "size-1",
+				Attributes: BuildBundleFileSizeAttributes{
+					DeviceModel:   &deviceModel,
+					OSVersion:     &osVersion,
+					DownloadBytes: &downloadBytes,
+					InstallBytes:  &installBytes,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Download Bytes") {
+		t.Fatalf("expected download bytes header, got: %s", output)
+	}
+	if !strings.Contains(output, "iPhone16,1") {
+		t.Fatalf("expected device model in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_BuildBundleFileSizes(t *testing.T) {
+	deviceModel := "iPhone16,1"
+	osVersion := "18.0"
+	downloadBytes := int64(2048)
+	installBytes := int64(4096)
+
+	resp := &BuildBundleFileSizesResponse{
+		Data: []Resource[BuildBundleFileSizeAttributes]{
+			{
+				ID: "size-1",
+				Attributes: BuildBundleFileSizeAttributes{
+					DeviceModel:   &deviceModel,
+					OSVersion:     &osVersion,
+					DownloadBytes: &downloadBytes,
+					InstallBytes:  &installBytes,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| ID | Device Model | OS Version |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "4096") {
+		t.Fatalf("expected install bytes in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_BetaAppClipInvocations(t *testing.T) {
+	urlValue := "https://example.com/clip"
+
+	resp := &BetaAppClipInvocationsResponse{
+		Data: []Resource[BetaAppClipInvocationAttributes]{
+			{
+				ID: "inv-1",
+				Attributes: BetaAppClipInvocationAttributes{
+					URL: &urlValue,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "URL") {
+		t.Fatalf("expected URL header, got: %s", output)
+	}
+	if !strings.Contains(output, "https://example.com/clip") {
+		t.Fatalf("expected URL in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_BetaAppClipInvocations(t *testing.T) {
+	urlValue := "https://example.com/clip"
+
+	resp := &BetaAppClipInvocationsResponse{
+		Data: []Resource[BetaAppClipInvocationAttributes]{
+			{
+				ID: "inv-1",
+				Attributes: BetaAppClipInvocationAttributes{
+					URL: &urlValue,
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| ID | URL |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "inv-1") {
+		t.Fatalf("expected invocation ID in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_AppClipDomainStatusResult(t *testing.T) {
+	lastUpdated := "2026-01-20T00:00:00Z"
+	domain := "example.com"
+	valid := true
+	errCode := "BAD_HTTP_RESPONSE"
+
+	result := &AppClipDomainStatusResult{
+		BuildBundleID:   "bundle-1",
+		Available:       true,
+		StatusID:        "status-1",
+		LastUpdatedDate: &lastUpdated,
+		Domains: []AppClipDomainStatusDomain{
+			{
+				Domain:          &domain,
+				IsValid:         &valid,
+				LastUpdatedDate: &lastUpdated,
+				ErrorCode:       &errCode,
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "Build Bundle ID") {
+		t.Fatalf("expected header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "example.com") {
+		t.Fatalf("expected domain in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_AppClipDomainStatusResult(t *testing.T) {
+	lastUpdated := "2026-01-20T00:00:00Z"
+	domain := "example.com"
+	valid := true
+
+	result := &AppClipDomainStatusResult{
+		BuildBundleID:   "bundle-1",
+		Available:       true,
+		StatusID:        "status-1",
+		LastUpdatedDate: &lastUpdated,
+		Domains: []AppClipDomainStatusDomain{
+			{
+				Domain:          &domain,
+				IsValid:         &valid,
+				LastUpdatedDate: &lastUpdated,
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(result)
+	})
+
+	if !strings.Contains(output, "| Build Bundle ID | Available | Status ID |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "example.com") {
+		t.Fatalf("expected domain in output, got: %s", output)
+	}
+}
+
 func TestPrintTable_BuildExpireAllResult(t *testing.T) {
 	result := &BuildExpireAllResult{
 		DryRun: true,
@@ -2326,6 +2574,78 @@ func TestPrintTable_AppStoreReviewAttachmentDeleteResult(t *testing.T) {
 		t.Fatalf("expected Deleted header in output, got: %s", output)
 	}
 	if !strings.Contains(output, "attach-1") {
+		t.Fatalf("expected id in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_RoutingAppCoverage(t *testing.T) {
+	state := "COMPLETE"
+	resp := &RoutingAppCoverageResponse{
+		Data: Resource[RoutingAppCoverageAttributes]{
+			ID:   "cover-1",
+			Type: ResourceTypeRoutingAppCoverages,
+			Attributes: RoutingAppCoverageAttributes{
+				FileName:           "coverage.geojson",
+				FileSize:           2048,
+				SourceFileChecksum: "abcd1234",
+				AssetDeliveryState: &AppMediaAssetState{State: &state},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "File Name") {
+		t.Fatalf("expected file name header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "coverage.geojson") {
+		t.Fatalf("expected file name in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_RoutingAppCoverage(t *testing.T) {
+	state := "COMPLETE"
+	resp := &RoutingAppCoverageResponse{
+		Data: Resource[RoutingAppCoverageAttributes]{
+			ID:   "cover-1",
+			Type: ResourceTypeRoutingAppCoverages,
+			Attributes: RoutingAppCoverageAttributes{
+				FileName:           "coverage.geojson",
+				FileSize:           2048,
+				SourceFileChecksum: "abcd1234",
+				AssetDeliveryState: &AppMediaAssetState{State: &state},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| Field | Value |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "File Name") {
+		t.Fatalf("expected file name field in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_RoutingAppCoverageDeleteResult(t *testing.T) {
+	result := &RoutingAppCoverageDeleteResult{
+		ID:      "cover-1",
+		Deleted: true,
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "Deleted") {
+		t.Fatalf("expected Deleted header in output, got: %s", output)
+	}
+	if !strings.Contains(output, "cover-1") {
 		t.Fatalf("expected id in output, got: %s", output)
 	}
 }
