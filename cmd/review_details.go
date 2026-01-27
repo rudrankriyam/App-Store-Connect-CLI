@@ -27,7 +27,10 @@ Examples:
   asc review-details for-version --version-id "VERSION_ID"
   asc review-details create --version-id "VERSION_ID" --contact-email "dev@example.com"
   asc review-details update --id "DETAIL_ID" --notes "Updated review notes"
-  asc review-details attachments list --review-detail "DETAIL_ID"`,
+  asc review-details attachments list --review-detail "DETAIL_ID"
+
+Alias:
+  asc review details-get --id "DETAIL_ID"`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{
@@ -318,6 +321,42 @@ Examples:
 			return printOutput(resp, *output, *pretty)
 		},
 	}
+}
+
+// ReviewDetailsGetNounCommand returns the noun-first review details get command.
+func ReviewDetailsGetNounCommand() *ffcli.Command {
+	cmd := ReviewDetailsGetCommand()
+	cmd.Name = "details-get"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details get", "review details-get")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details get", "review details-get")
+	return cmd
+}
+
+// ReviewDetailsForVersionNounCommand returns the noun-first review details for-version command.
+func ReviewDetailsForVersionNounCommand() *ffcli.Command {
+	cmd := ReviewDetailsForVersionCommand()
+	cmd.Name = "details-for-version"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details for-version", "review details-for-version")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details for-version", "review details-for-version")
+	return cmd
+}
+
+// ReviewDetailsCreateNounCommand returns the noun-first review details create command.
+func ReviewDetailsCreateNounCommand() *ffcli.Command {
+	cmd := ReviewDetailsCreateCommand()
+	cmd.Name = "details-create"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details create", "review details-create")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details create", "review details-create")
+	return cmd
+}
+
+// ReviewDetailsUpdateNounCommand returns the noun-first review details update command.
+func ReviewDetailsUpdateNounCommand() *ffcli.Command {
+	cmd := ReviewDetailsUpdateCommand()
+	cmd.Name = "details-update"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details update", "review details-update")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details update", "review details-update")
+	return cmd
 }
 
 func hasReviewDetailUpdates(visited map[string]bool) bool {

@@ -26,7 +26,10 @@ in-app events, and experiments.
 Examples:
   asc review-submissions list --app "123456789"
   asc review-submissions create --app "123456789" --platform IOS
-  asc review-submissions submit --id "SUBMISSION_ID" --confirm`,
+  asc review-submissions submit --id "SUBMISSION_ID" --confirm
+
+Alias:
+  asc review submissions-list --app "123456789"`,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{
 			ReviewSubmissionsListCommand(),
@@ -263,4 +266,40 @@ Examples:
 			return printOutput(resp, *output, *pretty)
 		},
 	}
+}
+
+// ReviewSubmissionsListNounCommand returns the noun-first review submissions list command.
+func ReviewSubmissionsListNounCommand() *ffcli.Command {
+	cmd := ReviewSubmissionsListCommand()
+	cmd.Name = "submissions-list"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-submissions list", "review submissions-list")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-submissions list", "review submissions-list")
+	return cmd
+}
+
+// ReviewSubmissionsGetNounCommand returns the noun-first review submissions get command.
+func ReviewSubmissionsGetNounCommand() *ffcli.Command {
+	cmd := ReviewSubmissionsGetCommand()
+	cmd.Name = "submissions-get"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-submissions get", "review submissions-get")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-submissions get", "review submissions-get")
+	return cmd
+}
+
+// ReviewSubmissionsCreateNounCommand returns the noun-first review submissions create command.
+func ReviewSubmissionsCreateNounCommand() *ffcli.Command {
+	cmd := ReviewSubmissionsCreateCommand()
+	cmd.Name = "submissions-create"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-submissions create", "review submissions-create")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-submissions create", "review submissions-create")
+	return cmd
+}
+
+// ReviewSubmissionsSubmitNounCommand returns the noun-first review submissions submit command.
+func ReviewSubmissionsSubmitNounCommand() *ffcli.Command {
+	cmd := ReviewSubmissionsSubmitCommand()
+	cmd.Name = "submissions-submit"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-submissions submit", "review submissions-submit")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-submissions submit", "review submissions-submit")
+	return cmd
 }

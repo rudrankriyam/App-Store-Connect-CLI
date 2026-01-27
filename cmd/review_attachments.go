@@ -27,7 +27,10 @@ Examples:
   asc review-details attachments list --review-detail "REVIEW_DETAIL_ID"
   asc review-details attachments get --id "ATTACHMENT_ID"
   asc review-details attachments upload --review-detail "REVIEW_DETAIL_ID" --file ./attachment.pdf
-  asc review-details attachments delete --id "ATTACHMENT_ID" --confirm`,
+  asc review-details attachments delete --id "ATTACHMENT_ID" --confirm
+
+Alias:
+  asc review attachments-list --review-detail "REVIEW_DETAIL_ID"`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{
@@ -344,6 +347,42 @@ Examples:
 			return printOutput(result, *output, *pretty)
 		},
 	}
+}
+
+// ReviewAttachmentsListCommand returns the noun-first review attachments list command.
+func ReviewAttachmentsListCommand() *ffcli.Command {
+	cmd := ReviewDetailsAttachmentsListCommand()
+	cmd.Name = "attachments-list"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details attachments list", "review attachments-list")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details attachments list", "review attachments-list")
+	return cmd
+}
+
+// ReviewAttachmentsGetCommand returns the noun-first review attachments get command.
+func ReviewAttachmentsGetCommand() *ffcli.Command {
+	cmd := ReviewDetailsAttachmentsGetCommand()
+	cmd.Name = "attachments-get"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details attachments get", "review attachments-get")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details attachments get", "review attachments-get")
+	return cmd
+}
+
+// ReviewAttachmentsUploadCommand returns the noun-first review attachments upload command.
+func ReviewAttachmentsUploadCommand() *ffcli.Command {
+	cmd := ReviewDetailsAttachmentsUploadCommand()
+	cmd.Name = "attachments-upload"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details attachments upload", "review attachments-upload")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details attachments upload", "review attachments-upload")
+	return cmd
+}
+
+// ReviewAttachmentsDeleteCommand returns the noun-first review attachments delete command.
+func ReviewAttachmentsDeleteCommand() *ffcli.Command {
+	cmd := ReviewDetailsAttachmentsDeleteCommand()
+	cmd.Name = "attachments-delete"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-details attachments delete", "review attachments-delete")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-details attachments delete", "review attachments-delete")
+	return cmd
 }
 
 func normalizeReviewAttachmentFields(value string) ([]string, error) {

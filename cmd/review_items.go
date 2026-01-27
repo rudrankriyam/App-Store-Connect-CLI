@@ -25,7 +25,10 @@ Items can be app versions, custom product pages, in-app events, or experiments.
 Examples:
   asc review-items list --submission "SUBMISSION_ID"
   asc review-items add --submission "SUBMISSION_ID" --item-type appStoreVersions --item-id "VERSION_ID"
-  asc review-items remove --id "ITEM_ID" --confirm`,
+  asc review-items remove --id "ITEM_ID" --confirm
+
+Alias:
+  asc review items-list --submission "SUBMISSION_ID"`,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{
 			ReviewItemsListCommand(),
@@ -218,6 +221,33 @@ Examples:
 			return printOutput(result, *output, *pretty)
 		},
 	}
+}
+
+// ReviewItemsListNounCommand returns the noun-first review items list command.
+func ReviewItemsListNounCommand() *ffcli.Command {
+	cmd := ReviewItemsListCommand()
+	cmd.Name = "items-list"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-items list", "review items-list")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-items list", "review items-list")
+	return cmd
+}
+
+// ReviewItemsAddNounCommand returns the noun-first review items add command.
+func ReviewItemsAddNounCommand() *ffcli.Command {
+	cmd := ReviewItemsAddCommand()
+	cmd.Name = "items-add"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-items add", "review items-add")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-items add", "review items-add")
+	return cmd
+}
+
+// ReviewItemsRemoveNounCommand returns the noun-first review items remove command.
+func ReviewItemsRemoveNounCommand() *ffcli.Command {
+	cmd := ReviewItemsRemoveCommand()
+	cmd.Name = "items-remove"
+	cmd.ShortUsage = strings.ReplaceAll(cmd.ShortUsage, "review-items remove", "review items-remove")
+	cmd.LongHelp = strings.ReplaceAll(cmd.LongHelp, "review-items remove", "review items-remove")
+	return cmd
 }
 
 func normalizeReviewSubmissionItemType(value string) (asc.ReviewSubmissionItemType, error) {
