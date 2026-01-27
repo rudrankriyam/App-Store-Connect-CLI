@@ -250,62 +250,20 @@ Examples:
 
 // AppSetupCategoriesSetCommand returns the categories set subcommand.
 func AppSetupCategoriesSetCommand() *ffcli.Command {
-	fs := flag.NewFlagSet("app-setup categories set", flag.ExitOnError)
-
-	appID := fs.String("app", os.Getenv("ASC_APP_ID"), "App ID (required)")
-	appInfoID := fs.String("app-info", "", "App Info ID (optional override)")
-	primary := fs.String("primary", "", "Primary category ID (required)")
-	secondary := fs.String("secondary", "", "Secondary category ID (optional)")
-	output := fs.String("output", "json", "Output format: json (default), table, markdown")
-	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
-
-	return &ffcli.Command{
-		Name:       "set",
-		ShortUsage: "asc app-setup categories set --app APP_ID --primary CATEGORY_ID [--secondary CATEGORY_ID] [--app-info APP_INFO_ID]",
-		ShortHelp:  "Set primary and secondary categories for an app.",
-		LongHelp: `Set the primary and secondary categories for an app.
+	return newCategoriesSetCommand(categoriesSetCommandConfig{
+		flagSetName: "app-setup categories set",
+		shortUsage:  "asc app-setup categories set --app APP_ID --primary CATEGORY_ID [--secondary CATEGORY_ID] [--app-info APP_INFO_ID]",
+		shortHelp:   "Set primary and secondary categories for an app.",
+		longHelp: `Set the primary and secondary categories for an app.
 
 Use 'asc categories list' to find valid category IDs.
 
 Examples:
   asc app-setup categories set --app 123456789 --primary GAMES
   asc app-setup categories set --app 123456789 --primary GAMES --secondary ENTERTAINMENT`,
-		FlagSet:   fs,
-		UsageFunc: DefaultUsageFunc,
-		Exec: func(ctx context.Context, args []string) error {
-			appIDValue := strings.TrimSpace(*appID)
-			appInfoIDValue := strings.TrimSpace(*appInfoID)
-			primaryValue := strings.TrimSpace(*primary)
-			secondaryValue := strings.TrimSpace(*secondary)
-
-			if appIDValue == "" {
-				return fmt.Errorf("app-setup categories set: --app is required")
-			}
-			if primaryValue == "" {
-				return fmt.Errorf("app-setup categories set: --primary is required")
-			}
-
-			client, err := getASCClient()
-			if err != nil {
-				return fmt.Errorf("app-setup categories set: %w", err)
-			}
-
-			requestCtx, cancel := contextWithTimeout(ctx)
-			defer cancel()
-
-			resolvedAppInfoID, err := resolveAppInfoID(requestCtx, client, appIDValue, appInfoIDValue)
-			if err != nil {
-				return fmt.Errorf("app-setup categories set: %w", err)
-			}
-
-			resp, err := client.UpdateAppInfoCategories(requestCtx, resolvedAppInfoID, primaryValue, secondaryValue)
-			if err != nil {
-				return fmt.Errorf("app-setup categories set: %w", err)
-			}
-
-			return printOutput(resp, *output, *pretty)
-		},
-	}
+		errorPrefix:    "app-setup categories set",
+		includeAppInfo: true,
+	})
 }
 
 // AppSetupAvailabilityCommand returns the availability subcommand group.

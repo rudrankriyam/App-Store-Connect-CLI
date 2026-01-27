@@ -84,19 +84,11 @@ Examples:
 
 // CategoriesSetCommand returns the categories set subcommand.
 func CategoriesSetCommand() *ffcli.Command {
-	fs := flag.NewFlagSet("categories set", flag.ExitOnError)
-
-	appID := fs.String("app", os.Getenv("ASC_APP_ID"), "App ID (required)")
-	primary := fs.String("primary", "", "Primary category ID (required)")
-	secondary := fs.String("secondary", "", "Secondary category ID (optional)")
-	output := fs.String("output", "json", "Output format: json (default), table, markdown")
-	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
-
-	return &ffcli.Command{
-		Name:       "set",
-		ShortUsage: "asc categories set --app APP_ID --primary CATEGORY_ID [--secondary CATEGORY_ID]",
-		ShortHelp:  "Set primary and secondary categories for an app.",
-		LongHelp: `Set the primary and secondary categories for an app.
+	return newCategoriesSetCommand(categoriesSetCommandConfig{
+		flagSetName: "categories set",
+		shortUsage:  "asc categories set --app APP_ID --primary CATEGORY_ID [--secondary CATEGORY_ID] [--app-info APP_INFO_ID]",
+		shortHelp:   "Set primary and secondary categories for an app.",
+		longHelp: `Set the primary and secondary categories for an app.
 
 Use 'asc categories list' to find valid category IDs.
 
@@ -106,45 +98,73 @@ Examples:
   asc categories set --app 123456789 --primary GAMES
   asc categories set --app 123456789 --primary GAMES --secondary ENTERTAINMENT
   asc categories set --app 123456789 --primary PHOTO_AND_VIDEO`,
-		FlagSet:   fs,
-		UsageFunc: DefaultUsageFunc,
+		errorPrefix:    "categories set",
+		includeAppInfo: true,
+	})
+}
+
+type categoriesSetCommandConfig struct {
+	flagSetName    string
+	shortUsage     string
+	shortHelp      string
+	longHelp       string
+	errorPrefix    string
+	includeAppInfo bool
+}
+
+func newCategoriesSetCommand(config categoriesSetCommandConfig) *ffcli.Command {
+	fs := flag.NewFlagSet(config.flagSetName, flag.ExitOnError)
+
+	appID := fs.String("app", os.Getenv("ASC_APP_ID"), "App ID (required)")
+	var appInfoID *string
+	if config.includeAppInfo {
+		appInfoID = fs.String("app-info", "", "App Info ID (optional override)")
+	}
+	primary := fs.String("primary", "", "Primary category ID (required)")
+	secondary := fs.String("secondary", "", "Secondary category ID (optional)")
+	output := fs.String("output", "json", "Output format: json (default), table, markdown")
+	pretty := fs.Bool("pretty", false, "Pretty-print JSON output")
+
+	return &ffcli.Command{
+		Name:       "set",
+		ShortUsage: config.shortUsage,
+		ShortHelp:  config.shortHelp,
+		LongHelp:   config.longHelp,
+		FlagSet:    fs,
+		UsageFunc:  DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
 			appIDValue := strings.TrimSpace(*appID)
 			primaryValue := strings.TrimSpace(*primary)
 			secondaryValue := strings.TrimSpace(*secondary)
 
+			appInfoIDValue := ""
+			if appInfoID != nil {
+				appInfoIDValue = strings.TrimSpace(*appInfoID)
+			}
+
 			if appIDValue == "" {
-				return fmt.Errorf("categories set: --app is required")
+				return fmt.Errorf("%s: --app is required", config.errorPrefix)
 			}
 			if primaryValue == "" {
-				return fmt.Errorf("categories set: --primary is required")
+				return fmt.Errorf("%s: --primary is required", config.errorPrefix)
 			}
 
 			client, err := getASCClient()
 			if err != nil {
-				return fmt.Errorf("categories set: %w", err)
+				return fmt.Errorf("%s: %w", config.errorPrefix, err)
 			}
 
 			requestCtx, cancel := contextWithTimeout(ctx)
 			defer cancel()
 
-			// Get the current app info ID
-			appInfos, err := client.GetAppInfos(requestCtx, appIDValue)
+			resolvedAppInfoID, err := resolveAppInfoID(requestCtx, client, appIDValue, appInfoIDValue)
 			if err != nil {
-				return fmt.Errorf("categories set: failed to get app info: %w", err)
+				return fmt.Errorf("%s: %w", config.errorPrefix, err)
 			}
 
-			if len(appInfos.Data) == 0 {
-				return fmt.Errorf("categories set: no app info found for app %s", appIDValue)
-			}
-
-			// Use the first (most recent) app info
-			appInfoID := appInfos.Data[0].ID
-
-			// Update categories
-			resp, err := client.UpdateAppInfoCategories(requestCtx, appInfoID, primaryValue, secondaryValue)
+			resp, err := client.UpdateAppInfoCategories(requestCtx, resolvedAppInfoID, primaryValue, secondaryValue)
 			if err != nil {
-				return fmt.Errorf("categories set: %w", err)
+				return fmt.Errorf("%s: %w", config.errorPrefix, err)
 			}
 
 			return printOutput(resp, *output, *pretty)
