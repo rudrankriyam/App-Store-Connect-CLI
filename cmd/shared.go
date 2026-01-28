@@ -408,7 +408,7 @@ func strictAuthEnabled() bool {
 	}
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
-		return true
+		return false
 	}
 	return parsed
 }
