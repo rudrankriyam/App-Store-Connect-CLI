@@ -1,4 +1,4 @@
-package cmd
+package analytics
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"github.com/peterbourgon/ff/v3/ffcli"
 
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/asc"
+	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/shared"
 )
 
 // AnalyticsRequestCommand creates a new analytics report request.
@@ -384,7 +385,7 @@ Examples:
 			}
 
 			defaultOutput := fmt.Sprintf("analytics_report_%s_%s.csv.gz", strings.TrimSpace(*requestID), strings.TrimSpace(*instanceID))
-			compressedPath, decompressedPath := resolveReportOutputPaths(*output, defaultOutput, ".csv", *decompress)
+			compressedPath, decompressedPath := shared.ResolveReportOutputPaths(*output, defaultOutput, ".csv", *decompress)
 
 			client, err := getASCClient()
 			if err != nil {
@@ -455,14 +456,14 @@ Examples:
 			}
 			defer download.Body.Close()
 
-			compressedSize, err := writeStreamToFile(compressedPath, download.Body)
+			compressedSize, err := shared.WriteStreamToFile(compressedPath, download.Body)
 			if err != nil {
 				return fmt.Errorf("analytics download: failed to write report: %w", err)
 			}
 
 			var decompressedSize int64
 			if *decompress {
-				decompressedSize, err = decompressGzipFile(compressedPath, decompressedPath)
+				decompressedSize, err = shared.DecompressGzipFile(compressedPath, decompressedPath)
 				if err != nil {
 					return fmt.Errorf("analytics download: %w", err)
 				}

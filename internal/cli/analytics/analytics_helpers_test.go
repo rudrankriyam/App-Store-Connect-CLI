@@ -1,4 +1,4 @@
-package cmd
+package analytics
 
 import (
 	"bytes"
@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/asc"
+	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/shared"
 )
 
 func TestResolveReportOutputPaths_Decompress(t *testing.T) {
-	compressed, decompressed := resolveReportOutputPaths("report.tsv.gz", "default.tsv.gz", ".tsv", true)
+	compressed, decompressed := shared.ResolveReportOutputPaths("report.tsv.gz", "default.tsv.gz", ".tsv", true)
 	if compressed != "report.tsv.gz" {
 		t.Fatalf("expected compressed path report.tsv.gz, got %q", compressed)
 	}
@@ -19,7 +20,7 @@ func TestResolveReportOutputPaths_Decompress(t *testing.T) {
 		t.Fatalf("expected decompressed path report.tsv, got %q", decompressed)
 	}
 
-	compressed, decompressed = resolveReportOutputPaths("report.tsv", "default.tsv.gz", ".tsv", true)
+	compressed, decompressed = shared.ResolveReportOutputPaths("report.tsv", "default.tsv.gz", ".tsv", true)
 	if compressed != "report.tsv.gz" {
 		t.Fatalf("expected compressed path report.tsv.gz, got %q", compressed)
 	}
@@ -27,7 +28,7 @@ func TestResolveReportOutputPaths_Decompress(t *testing.T) {
 		t.Fatalf("expected decompressed path report.tsv, got %q", decompressed)
 	}
 
-	compressed, decompressed = resolveReportOutputPaths("report", "default.tsv.gz", ".tsv", true)
+	compressed, decompressed = shared.ResolveReportOutputPaths("report", "default.tsv.gz", ".tsv", true)
 	if compressed != "report" {
 		t.Fatalf("expected compressed path report, got %q", compressed)
 	}
@@ -80,7 +81,7 @@ func TestDecompressGzipFile(t *testing.T) {
 		t.Fatalf("failed to write source gzip: %v", err)
 	}
 
-	size, err := decompressGzipFile(source, dest)
+	size, err := shared.DecompressGzipFile(source, dest)
 	if err != nil {
 		t.Fatalf("decompressGzipFile() error: %v", err)
 	}

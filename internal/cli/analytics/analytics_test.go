@@ -1,13 +1,95 @@
-package cmd
+package analytics
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
 	"io"
+	"os"
 	"strings"
 	"testing"
 )
+
+func parseAnalyticsArgs(args []string) []string {
+	if len(args) > 0 && args[0] == "analytics" {
+		return args[1:]
+	}
+	return args
+}
+
+func runAnalyticsCommand(t *testing.T, args []string) (string, string, error) {
+	t.Helper()
+
+	cmd := AnalyticsCommand()
+	cmd.FlagSet.SetOutput(io.Discard)
+
+	var runErr error
+	stdout, stderr := captureOutput(t, func() {
+		if err := cmd.Parse(parseAnalyticsArgs(args)); err != nil {
+			t.Fatalf("parse error: %v", err)
+		}
+		runErr = cmd.Run(context.Background())
+	})
+
+	return stdout, stderr, runErr
+}
+
+func captureOutput(t *testing.T, fn func()) (string, string) {
+	t.Helper()
+
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+
+	rOut, wOut, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create stdout pipe: %v", err)
+	}
+	rErr, wErr, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create stderr pipe: %v", err)
+	}
+
+	os.Stdout = wOut
+	os.Stderr = wErr
+
+	outC := make(chan string)
+	errC := make(chan string)
+
+	go func() {
+		var buf bytes.Buffer
+		_, _ = io.Copy(&buf, rOut)
+		_ = rOut.Close()
+		outC <- buf.String()
+	}()
+
+	go func() {
+		var buf bytes.Buffer
+		_, _ = io.Copy(&buf, rErr)
+		_ = rErr.Close()
+		errC <- buf.String()
+	}()
+
+	defer func() {
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
+		_ = wOut.Close()
+		_ = wErr.Close()
+	}()
+
+	fn()
+
+	_ = wOut.Close()
+	_ = wErr.Close()
+
+	stdout := <-outC
+	stderr := <-errC
+
+	os.Stdout = oldStdout
+	os.Stderr = oldStderr
+
+	return stdout, stderr
+}
 
 func TestAnalyticsSalesValidationErrors(t *testing.T) {
 	t.Setenv("ASC_VENDOR_NUMBER", "")
@@ -47,18 +129,10 @@ func TestAnalyticsSalesValidationErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			root := RootCommand("1.2.3")
-			root.FlagSet.SetOutput(io.Discard)
-
-			stdout, stderr := captureOutput(t, func() {
-				if err := root.Parse(test.args); err != nil {
-					t.Fatalf("parse error: %v", err)
-				}
-				err := root.Run(context.Background())
-				if !errors.Is(err, flag.ErrHelp) {
-					t.Fatalf("expected ErrHelp, got %v", err)
-				}
-			})
+			stdout, stderr, err := runAnalyticsCommand(t, test.args)
+			if !errors.Is(err, flag.ErrHelp) {
+				t.Fatalf("expected ErrHelp, got %v", err)
+			}
 
 			if stdout != "" {
 				t.Fatalf("expected empty stdout, got %q", stdout)
@@ -92,18 +166,10 @@ func TestAnalyticsRequestValidationErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			root := RootCommand("1.2.3")
-			root.FlagSet.SetOutput(io.Discard)
-
-			stdout, stderr := captureOutput(t, func() {
-				if err := root.Parse(test.args); err != nil {
-					t.Fatalf("parse error: %v", err)
-				}
-				err := root.Run(context.Background())
-				if !errors.Is(err, flag.ErrHelp) {
-					t.Fatalf("expected ErrHelp, got %v", err)
-				}
-			})
+			stdout, stderr, err := runAnalyticsCommand(t, test.args)
+			if !errors.Is(err, flag.ErrHelp) {
+				t.Fatalf("expected ErrHelp, got %v", err)
+			}
 
 			if stdout != "" {
 				t.Fatalf("expected empty stdout, got %q", stdout)
@@ -118,18 +184,10 @@ func TestAnalyticsRequestValidationErrors(t *testing.T) {
 func TestAnalyticsRequestsValidationErrors(t *testing.T) {
 	t.Setenv("ASC_APP_ID", "")
 
-	root := RootCommand("1.2.3")
-	root.FlagSet.SetOutput(io.Discard)
-
-	stdout, stderr := captureOutput(t, func() {
-		if err := root.Parse([]string{"analytics", "requests"}); err != nil {
-			t.Fatalf("parse error: %v", err)
-		}
-		err := root.Run(context.Background())
-		if !errors.Is(err, flag.ErrHelp) {
-			t.Fatalf("expected ErrHelp, got %v", err)
-		}
-	})
+	stdout, stderr, err := runAnalyticsCommand(t, []string{"analytics", "requests"})
+	if !errors.Is(err, flag.ErrHelp) {
+		t.Fatalf("expected ErrHelp, got %v", err)
+	}
 
 	if stdout != "" {
 		t.Fatalf("expected empty stdout, got %q", stdout)
@@ -140,18 +198,10 @@ func TestAnalyticsRequestsValidationErrors(t *testing.T) {
 }
 
 func TestAnalyticsGetValidationErrors(t *testing.T) {
-	root := RootCommand("1.2.3")
-	root.FlagSet.SetOutput(io.Discard)
-
-	stdout, stderr := captureOutput(t, func() {
-		if err := root.Parse([]string{"analytics", "get"}); err != nil {
-			t.Fatalf("parse error: %v", err)
-		}
-		err := root.Run(context.Background())
-		if !errors.Is(err, flag.ErrHelp) {
-			t.Fatalf("expected ErrHelp, got %v", err)
-		}
-	})
+	stdout, stderr, err := runAnalyticsCommand(t, []string{"analytics", "get"})
+	if !errors.Is(err, flag.ErrHelp) {
+		t.Fatalf("expected ErrHelp, got %v", err)
+	}
 
 	if stdout != "" {
 		t.Fatalf("expected empty stdout, got %q", stdout)
@@ -181,18 +231,10 @@ func TestAnalyticsDownloadValidationErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			root := RootCommand("1.2.3")
-			root.FlagSet.SetOutput(io.Discard)
-
-			stdout, stderr := captureOutput(t, func() {
-				if err := root.Parse(test.args); err != nil {
-					t.Fatalf("parse error: %v", err)
-				}
-				err := root.Run(context.Background())
-				if !errors.Is(err, flag.ErrHelp) {
-					t.Fatalf("expected ErrHelp, got %v", err)
-				}
-			})
+			stdout, stderr, err := runAnalyticsCommand(t, test.args)
+			if !errors.Is(err, flag.ErrHelp) {
+				t.Fatalf("expected ErrHelp, got %v", err)
+			}
 
 			if stdout != "" {
 				t.Fatalf("expected empty stdout, got %q", stdout)

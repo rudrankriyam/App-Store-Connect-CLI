@@ -10,6 +10,7 @@ import (
 	"github.com/peterbourgon/ff/v3/ffcli"
 
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/asc"
+	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/shared"
 )
 
 // FinanceCommand returns the finance command with subcommands.
@@ -103,7 +104,7 @@ Examples:
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
-			vendorNumber := resolveVendorNumber(*vendor)
+			vendorNumber := shared.ResolveVendorNumber(*vendor)
 			if vendorNumber == "" {
 				fmt.Fprintln(os.Stderr, "Error: --vendor is required (or set ASC_VENDOR_NUMBER)")
 				return flag.ErrHelp
@@ -134,7 +135,7 @@ Examples:
 				return fmt.Errorf("finance reports: %w", err)
 			}
 			defaultOutput := fmt.Sprintf("finance_report_%s_%s_%s.tsv.gz", reportDate, string(normalizedReportType), regionCode)
-			compressedPath, decompressedPath := resolveReportOutputPaths(*output, defaultOutput, ".tsv", *decompress)
+			compressedPath, decompressedPath := shared.ResolveReportOutputPaths(*output, defaultOutput, ".tsv", *decompress)
 
 			client, err := getASCClient()
 			if err != nil {
@@ -155,14 +156,14 @@ Examples:
 			}
 			defer download.Body.Close()
 
-			compressedSize, err := writeStreamToFile(compressedPath, download.Body)
+			compressedSize, err := shared.WriteStreamToFile(compressedPath, download.Body)
 			if err != nil {
 				return fmt.Errorf("finance reports: failed to write report: %w", err)
 			}
 
 			var decompressedSize int64
 			if *decompress {
-				decompressedSize, err = decompressGzipFile(compressedPath, decompressedPath)
+				decompressedSize, err = shared.DecompressGzipFile(compressedPath, decompressedPath)
 				if err != nil {
 					return fmt.Errorf("finance reports: %w", err)
 				}

@@ -13,6 +13,7 @@ import (
 	"github.com/peterbourgon/ff/v3/ffcli"
 
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/asc"
+	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/shared"
 )
 
 // PerformanceCommand returns the performance command group.
@@ -443,16 +444,16 @@ Examples:
 					return fmt.Errorf("performance download: %w", err)
 				}
 				shouldDecompress := *decompress && isGzip
-				compressedPath, decompressedPath := resolveReportOutputPaths(*output, defaultOutput, ".json", shouldDecompress)
+				compressedPath, decompressedPath := shared.ResolveReportOutputPaths(*output, defaultOutput, ".json", shouldDecompress)
 
-				compressedSize, err := writeStreamToFile(compressedPath, reader)
+				compressedSize, err := shared.WriteStreamToFile(compressedPath, reader)
 				if err != nil {
 					return fmt.Errorf("performance download: %w", err)
 				}
 
 				var decompressedSize int64
 				if shouldDecompress {
-					decompressedSize, err = decompressGzipFile(compressedPath, decompressedPath)
+					decompressedSize, err = shared.DecompressGzipFile(compressedPath, decompressedPath)
 					if err != nil {
 						return fmt.Errorf("performance download: %w", err)
 					}
@@ -487,16 +488,16 @@ Examples:
 					return fmt.Errorf("performance download: %w", err)
 				}
 				shouldDecompress := *decompress && isGzip
-				compressedPath, decompressedPath := resolveReportOutputPaths(*output, defaultOutput, ".json", shouldDecompress)
+				compressedPath, decompressedPath := shared.ResolveReportOutputPaths(*output, defaultOutput, ".json", shouldDecompress)
 
-				compressedSize, err := writeStreamToFile(compressedPath, reader)
+				compressedSize, err := shared.WriteStreamToFile(compressedPath, reader)
 				if err != nil {
 					return fmt.Errorf("performance download: %w", err)
 				}
 
 				var decompressedSize int64
 				if shouldDecompress {
-					decompressedSize, err = decompressGzipFile(compressedPath, decompressedPath)
+					decompressedSize, err = shared.DecompressGzipFile(compressedPath, decompressedPath)
 					if err != nil {
 						return fmt.Errorf("performance download: %w", err)
 					}
@@ -531,16 +532,16 @@ Examples:
 					return fmt.Errorf("performance download: %w", err)
 				}
 				shouldDecompress := *decompress && isGzip
-				compressedPath, decompressedPath := resolveReportOutputPaths(*output, defaultOutput, ".json", shouldDecompress)
+				compressedPath, decompressedPath := shared.ResolveReportOutputPaths(*output, defaultOutput, ".json", shouldDecompress)
 
-				compressedSize, err := writeStreamToFile(compressedPath, reader)
+				compressedSize, err := shared.WriteStreamToFile(compressedPath, reader)
 				if err != nil {
 					return fmt.Errorf("performance download: %w", err)
 				}
 
 				var decompressedSize int64
 				if shouldDecompress {
-					decompressedSize, err = decompressGzipFile(compressedPath, decompressedPath)
+					decompressedSize, err = shared.DecompressGzipFile(compressedPath, decompressedPath)
 					if err != nil {
 						return fmt.Errorf("performance download: %w", err)
 					}
