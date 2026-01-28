@@ -955,6 +955,58 @@ func TestBuildSubscriptionOfferCodeOneTimeUseCodesQuery(t *testing.T) {
 	}
 }
 
+func TestBuildWinBackOffersQuery(t *testing.T) {
+	query := &winBackOffersQuery{}
+	opts := []WinBackOffersOption{
+		WithWinBackOffersLimit(25),
+		WithWinBackOffersNextURL("https://api.appstoreconnect.apple.com/v1/subscriptions/sub-1/winBackOffers?cursor=abc"),
+	}
+	for _, opt := range opts {
+		opt(query)
+	}
+
+	if query.limit != 25 {
+		t.Fatalf("expected limit=25, got %d", query.limit)
+	}
+	if query.nextURL == "" {
+		t.Fatalf("expected nextURL to be set")
+	}
+
+	values, err := url.ParseQuery(buildWinBackOffersQuery(query))
+	if err != nil {
+		t.Fatalf("failed to parse query: %v", err)
+	}
+	if got := values.Get("limit"); got != "25" {
+		t.Fatalf("expected limit=25, got %q", got)
+	}
+}
+
+func TestBuildWinBackOfferPricesQuery(t *testing.T) {
+	query := &winBackOfferPricesQuery{}
+	opts := []WinBackOfferPricesOption{
+		WithWinBackOfferPricesLimit(15),
+		WithWinBackOfferPricesNextURL("https://api.appstoreconnect.apple.com/v1/winBackOffers/offer-1/prices?cursor=abc"),
+	}
+	for _, opt := range opts {
+		opt(query)
+	}
+
+	if query.limit != 15 {
+		t.Fatalf("expected limit=15, got %d", query.limit)
+	}
+	if query.nextURL == "" {
+		t.Fatalf("expected nextURL to be set")
+	}
+
+	values, err := url.ParseQuery(buildWinBackOfferPricesQuery(query))
+	if err != nil {
+		t.Fatalf("failed to parse query: %v", err)
+	}
+	if got := values.Get("limit"); got != "15" {
+		t.Fatalf("expected limit=15, got %q", got)
+	}
+}
+
 func TestBuildPerfPowerMetricsQuery(t *testing.T) {
 	query := &perfPowerMetricsQuery{
 		platforms:   []string{"IOS"},

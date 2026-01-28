@@ -35,6 +35,12 @@ type BetaAppClipInvocationsOption func(*betaAppClipInvocationsQuery)
 // SubscriptionOfferCodeOneTimeUseCodesOption is a functional option for GetSubscriptionOfferCodeOneTimeUseCodes.
 type SubscriptionOfferCodeOneTimeUseCodesOption func(*subscriptionOfferCodeOneTimeUseCodesQuery)
 
+// WinBackOffersOption is a functional option for win-back offer list endpoints.
+type WinBackOffersOption func(*winBackOffersQuery)
+
+// WinBackOfferPricesOption is a functional option for win-back offer prices list endpoints.
+type WinBackOfferPricesOption func(*winBackOfferPricesQuery)
+
 // AppStoreVersionsOption is a functional option for GetAppStoreVersions.
 type AppStoreVersionsOption func(*appStoreVersionsQuery)
 
@@ -271,6 +277,42 @@ func WithSubscriptionOfferCodeOneTimeUseCodesLimit(limit int) SubscriptionOfferC
 // WithSubscriptionOfferCodeOneTimeUseCodesNextURL uses a next page URL directly.
 func WithSubscriptionOfferCodeOneTimeUseCodesNextURL(next string) SubscriptionOfferCodeOneTimeUseCodesOption {
 	return func(q *subscriptionOfferCodeOneTimeUseCodesQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithWinBackOffersLimit sets the max number of win-back offers to return.
+func WithWinBackOffersLimit(limit int) WinBackOffersOption {
+	return func(q *winBackOffersQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithWinBackOffersNextURL uses a next page URL directly.
+func WithWinBackOffersNextURL(next string) WinBackOffersOption {
+	return func(q *winBackOffersQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithWinBackOfferPricesLimit sets the max number of win-back offer prices to return.
+func WithWinBackOfferPricesLimit(limit int) WinBackOfferPricesOption {
+	return func(q *winBackOfferPricesQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithWinBackOfferPricesNextURL uses a next page URL directly.
+func WithWinBackOfferPricesNextURL(next string) WinBackOfferPricesOption {
+	return func(q *winBackOfferPricesQuery) {
 		if strings.TrimSpace(next) != "" {
 			q.nextURL = strings.TrimSpace(next)
 		}

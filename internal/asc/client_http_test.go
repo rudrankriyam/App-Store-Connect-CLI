@@ -6413,3 +6413,223 @@ func TestGetDiagnosticSignatureLogs(t *testing.T) {
 		t.Fatalf("GetDiagnosticSignatureLogs() error: %v", err)
 	}
 }
+
+func TestGetSubscriptionWinBackOffers_WithLimit(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"winBackOffers","id":"offer-1"}],"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/subscriptions/sub-1/winBackOffers" {
+			t.Fatalf("expected path /v1/subscriptions/sub-1/winBackOffers, got %s", req.URL.Path)
+		}
+		if req.URL.Query().Get("limit") != "5" {
+			t.Fatalf("expected limit=5, got %q", req.URL.Query().Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetSubscriptionWinBackOffers(context.Background(), "sub-1", WithWinBackOffersLimit(5)); err != nil {
+		t.Fatalf("GetSubscriptionWinBackOffers() error: %v", err)
+	}
+}
+
+func TestGetSubscriptionWinBackOffers_UsesNextURL(t *testing.T) {
+	next := "https://api.appstoreconnect.apple.com/v1/subscriptions/sub-1/winBackOffers?cursor=abc"
+	response := jsonResponse(http.StatusOK, `{"data":[]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.URL.String() != next {
+			t.Fatalf("expected next URL %q, got %q", next, req.URL.String())
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetSubscriptionWinBackOffers(context.Background(), "sub-1", WithWinBackOffersNextURL(next)); err != nil {
+		t.Fatalf("GetSubscriptionWinBackOffers() error: %v", err)
+	}
+}
+
+func TestGetWinBackOffer(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"winBackOffers","id":"offer-1"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/winBackOffers/offer-1" {
+			t.Fatalf("expected path /v1/winBackOffers/offer-1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetWinBackOffer(context.Background(), "offer-1"); err != nil {
+		t.Fatalf("GetWinBackOffer() error: %v", err)
+	}
+}
+
+func TestCreateWinBackOffer_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"winBackOffers","id":"offer-1"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/winBackOffers" {
+			t.Fatalf("expected path /v1/winBackOffers, got %s", req.URL.Path)
+		}
+		var payload WinBackOfferCreateRequest
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeWinBackOffers {
+			t.Fatalf("expected type winBackOffers, got %q", payload.Data.Type)
+		}
+		if payload.Data.Attributes.ReferenceName != "Spring Offer" {
+			t.Fatalf("expected referenceName, got %q", payload.Data.Attributes.ReferenceName)
+		}
+		if payload.Data.Attributes.OfferID != "OFFER-1" {
+			t.Fatalf("expected offerId, got %q", payload.Data.Attributes.OfferID)
+		}
+		if payload.Data.Relationships.Subscription.Data.Type != ResourceTypeSubscriptions {
+			t.Fatalf("expected subscription type subscriptions, got %q", payload.Data.Relationships.Subscription.Data.Type)
+		}
+		if payload.Data.Relationships.Subscription.Data.ID != "sub-1" {
+			t.Fatalf("expected subscription id sub-1, got %q", payload.Data.Relationships.Subscription.Data.ID)
+		}
+		if len(payload.Data.Relationships.Prices.Data) != 1 {
+			t.Fatalf("expected 1 price relationship, got %d", len(payload.Data.Relationships.Prices.Data))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	waitBetween := 6
+	req := WinBackOfferCreateRequest{
+		Data: WinBackOfferCreateData{
+			Type: ResourceTypeWinBackOffers,
+			Attributes: WinBackOfferCreateAttributes{
+				ReferenceName:                                   "Spring Offer",
+				OfferID:                                         "OFFER-1",
+				Duration:                                        SubscriptionOfferDurationOneMonth,
+				OfferMode:                                       SubscriptionOfferModePayAsYouGo,
+				PeriodCount:                                     1,
+				CustomerEligibilityPaidSubscriptionDurationInMonths: 6,
+				CustomerEligibilityTimeSinceLastSubscribedInMonths:  NewIntegerRange(3, 12),
+				CustomerEligibilityWaitBetweenOffersInMonths:    &waitBetween,
+				StartDate:                                       "2026-02-01",
+				Priority:                                        WinBackOfferPriorityHigh,
+			},
+			Relationships: WinBackOfferCreateRelationships{
+				Subscription: Relationship{
+					Data: ResourceData{Type: ResourceTypeSubscriptions, ID: "sub-1"},
+				},
+				Prices: RelationshipList{Data: []ResourceData{
+					{Type: ResourceTypeWinBackOfferPrices, ID: "price-1"},
+				}},
+			},
+		},
+	}
+
+	if _, err := client.CreateWinBackOffer(context.Background(), req); err != nil {
+		t.Fatalf("CreateWinBackOffer() error: %v", err)
+	}
+}
+
+func TestUpdateWinBackOffer_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"winBackOffers","id":"offer-1"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/winBackOffers/offer-1" {
+			t.Fatalf("expected path /v1/winBackOffers/offer-1, got %s", req.URL.Path)
+		}
+		var payload WinBackOfferUpdateRequest
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			t.Fatalf("decode error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeWinBackOffers || payload.Data.ID != "offer-1" {
+			t.Fatalf("unexpected payload: %+v", payload.Data)
+		}
+		if payload.Data.Attributes.Priority == nil || *payload.Data.Attributes.Priority != WinBackOfferPriorityNormal {
+			t.Fatalf("expected priority NORMAL, got %+v", payload.Data.Attributes.Priority)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	priority := WinBackOfferPriorityNormal
+	attrs := WinBackOfferUpdateAttributes{
+		Priority: &priority,
+	}
+	if _, err := client.UpdateWinBackOffer(context.Background(), "offer-1", attrs); err != nil {
+		t.Fatalf("UpdateWinBackOffer() error: %v", err)
+	}
+}
+
+func TestDeleteWinBackOffer_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/winBackOffers/offer-1" {
+			t.Fatalf("expected path /v1/winBackOffers/offer-1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteWinBackOffer(context.Background(), "offer-1"); err != nil {
+		t.Fatalf("DeleteWinBackOffer() error: %v", err)
+	}
+}
+
+func TestGetWinBackOfferPrices_WithLimit(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"winBackOfferPrices","id":"price-1"}],"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/winBackOffers/offer-1/prices" {
+			t.Fatalf("expected path /v1/winBackOffers/offer-1/prices, got %s", req.URL.Path)
+		}
+		if req.URL.Query().Get("limit") != "10" {
+			t.Fatalf("expected limit=10, got %q", req.URL.Query().Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetWinBackOfferPrices(context.Background(), "offer-1", WithWinBackOfferPricesLimit(10)); err != nil {
+		t.Fatalf("GetWinBackOfferPrices() error: %v", err)
+	}
+}
+
+func TestGetWinBackOfferPricesRelationships(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"winBackOfferPrices","id":"price-1"}],"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.URL.Path != "/v1/winBackOffers/offer-1/relationships/prices" {
+			t.Fatalf("expected path /v1/winBackOffers/offer-1/relationships/prices, got %s", req.URL.Path)
+		}
+		if req.URL.Query().Get("limit") != "2" {
+			t.Fatalf("expected limit=2, got %q", req.URL.Query().Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetWinBackOfferPricesRelationships(context.Background(), "offer-1", WithLinkagesLimit(2)); err != nil {
+		t.Fatalf("GetWinBackOfferPricesRelationships() error: %v", err)
+	}
+}
+
+func TestGetSubscriptionWinBackOffersRelationships(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"winBackOffers","id":"offer-1"}],"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.URL.Path != "/v1/subscriptions/sub-1/relationships/winBackOffers" {
+			t.Fatalf("expected path /v1/subscriptions/sub-1/relationships/winBackOffers, got %s", req.URL.Path)
+		}
+		if req.URL.Query().Get("limit") != "3" {
+			t.Fatalf("expected limit=3, got %q", req.URL.Query().Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetSubscriptionWinBackOffersRelationships(context.Background(), "sub-1", WithLinkagesLimit(3)); err != nil {
+		t.Fatalf("GetSubscriptionWinBackOffersRelationships() error: %v", err)
+	}
+}

@@ -117,6 +117,12 @@ func PrintMarkdown(data interface{}) error {
 		return printBetaAppClipInvocationsMarkdown(v)
 	case *SubscriptionOfferCodeOneTimeUseCodesResponse:
 		return printOfferCodesMarkdown(v)
+	case *WinBackOffersResponse:
+		return printWinBackOffersMarkdown(v)
+	case *WinBackOfferResponse:
+		return printWinBackOffersMarkdown(&WinBackOffersResponse{Data: []Resource[WinBackOfferAttributes]{v.Data}})
+	case *WinBackOfferPricesResponse:
+		return printWinBackOfferPricesMarkdown(v)
 	case *AppStoreVersionsResponse:
 		return printAppStoreVersionsMarkdown(v)
 	case *PreReleaseVersionsResponse:
@@ -127,6 +133,8 @@ func PrintMarkdown(data interface{}) error {
 		return printAppClipDomainStatusResultMarkdown(v)
 	case *SubscriptionOfferCodeOneTimeUseCodeResponse:
 		return printOfferCodesMarkdown(&SubscriptionOfferCodeOneTimeUseCodesResponse{Data: []Resource[SubscriptionOfferCodeOneTimeUseCodeAttributes]{v.Data}})
+	case *WinBackOfferDeleteResult:
+		return printWinBackOfferDeleteResultMarkdown(v)
 	case *AppAvailabilityV2Response:
 		return printAppAvailabilityMarkdown(v)
 	case *TerritoryAvailabilitiesResponse:
@@ -493,6 +501,12 @@ func PrintTable(data interface{}) error {
 		return printBetaAppClipInvocationsTable(v)
 	case *SubscriptionOfferCodeOneTimeUseCodesResponse:
 		return printOfferCodesTable(v)
+	case *WinBackOffersResponse:
+		return printWinBackOffersTable(v)
+	case *WinBackOfferResponse:
+		return printWinBackOffersTable(&WinBackOffersResponse{Data: []Resource[WinBackOfferAttributes]{v.Data}})
+	case *WinBackOfferPricesResponse:
+		return printWinBackOfferPricesTable(v)
 	case *AppStoreVersionsResponse:
 		return printAppStoreVersionsTable(v)
 	case *PreReleaseVersionsResponse:
@@ -503,6 +517,8 @@ func PrintTable(data interface{}) error {
 		return printAppClipDomainStatusResultTable(v)
 	case *SubscriptionOfferCodeOneTimeUseCodeResponse:
 		return printOfferCodesTable(&SubscriptionOfferCodeOneTimeUseCodesResponse{Data: []Resource[SubscriptionOfferCodeOneTimeUseCodeAttributes]{v.Data}})
+	case *WinBackOfferDeleteResult:
+		return printWinBackOfferDeleteResultTable(v)
 	case *AppAvailabilityV2Response:
 		return printAppAvailabilityTable(v)
 	case *TerritoryAvailabilitiesResponse:

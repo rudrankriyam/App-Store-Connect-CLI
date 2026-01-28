@@ -97,6 +97,14 @@ type subscriptionOfferCodeOneTimeUseCodesQuery struct {
 	listQuery
 }
 
+type winBackOffersQuery struct {
+	listQuery
+}
+
+type winBackOfferPricesQuery struct {
+	listQuery
+}
+
 type appStoreVersionsQuery struct {
 	listQuery
 	platforms      []string
@@ -624,6 +632,18 @@ func buildBetaRecruitmentCriterionOptionsQuery(query *betaRecruitmentCriterionOp
 }
 
 func buildSubscriptionOfferCodeOneTimeUseCodesQuery(query *subscriptionOfferCodeOneTimeUseCodesQuery) string {
+	values := url.Values{}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildWinBackOffersQuery(query *winBackOffersQuery) string {
+	values := url.Values{}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildWinBackOfferPricesQuery(query *winBackOfferPricesQuery) string {
 	values := url.Values{}
 	addLimit(values, query.limit)
 	return values.Encode()
