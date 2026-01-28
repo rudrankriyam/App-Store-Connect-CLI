@@ -1,4 +1,4 @@
-package cmd
+package pricing
 
 import (
 	"context"
