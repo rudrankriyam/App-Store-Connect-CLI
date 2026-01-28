@@ -42,6 +42,7 @@ func RootCommand(version string) *ffcli.Command {
 			PerformanceCommand(),
 			FinanceCommand(),
 			AppsCommand(),
+			AndroidIosMappingCommand(),
 			AppSetupCommand(),
 			AppTagsCommand(),
 			NominationsCommand(),

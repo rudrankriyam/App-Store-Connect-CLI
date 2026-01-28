@@ -2954,3 +2954,70 @@ func TestPrintTable_PerformanceDownloadResult(t *testing.T) {
 		t.Fatalf("expected file path in output, got: %s", output)
 	}
 }
+
+func TestPrintTable_AndroidToIosAppMappingDetails(t *testing.T) {
+	resp := &AndroidToIosAppMappingDetailsResponse{
+		Data: []Resource[AndroidToIosAppMappingDetailAttributes]{
+			{
+				ID:   "map-1",
+				Type: ResourceTypeAndroidToIosAppMappingDetails,
+				Attributes: AndroidToIosAppMappingDetailAttributes{
+					PackageName: "com.example.android",
+					AppSigningKeyPublicCertificateSha256Fingerprints: []string{"sha1", "sha2"},
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Package Name") {
+		t.Fatalf("expected package name header, got: %s", output)
+	}
+	if !strings.Contains(output, "com.example.android") {
+		t.Fatalf("expected package name value, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_AndroidToIosAppMappingDetail(t *testing.T) {
+	resp := &AndroidToIosAppMappingDetailResponse{
+		Data: Resource[AndroidToIosAppMappingDetailAttributes]{
+			ID:   "map-1",
+			Type: ResourceTypeAndroidToIosAppMappingDetails,
+			Attributes: AndroidToIosAppMappingDetailAttributes{
+				PackageName: "com.example.android",
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| Package Name |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "com.example.android") {
+		t.Fatalf("expected package name value, got: %s", output)
+	}
+}
+
+func TestPrintTable_AndroidToIosAppMappingDeleteResult(t *testing.T) {
+	result := &AndroidToIosAppMappingDeleteResult{
+		ID:      "map-1",
+		Deleted: true,
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "Deleted") {
+		t.Fatalf("expected deleted header, got: %s", output)
+	}
+	if !strings.Contains(output, "map-1") {
+		t.Fatalf("expected mapping id, got: %s", output)
+	}
+}

@@ -1008,6 +1008,23 @@ func TestBuildDiagnosticLogsQuery(t *testing.T) {
 	}
 }
 
+func TestBuildAndroidToIosAppMappingDetailsQuery(t *testing.T) {
+	query := &androidToIosAppMappingDetailsQuery{
+		listQuery: listQuery{limit: 10},
+		fields:    []string{"packageName", "appSigningKeyPublicCertificateSha256Fingerprints"},
+	}
+	values, err := url.ParseQuery(buildAndroidToIosAppMappingDetailsQuery(query))
+	if err != nil {
+		t.Fatalf("ParseQuery() error: %v", err)
+	}
+	if values.Get("limit") != "10" {
+		t.Fatalf("expected limit=10, got %q", values.Get("limit"))
+	}
+	if values.Get("fields[androidToIosAppMappingDetails]") != "packageName,appSigningKeyPublicCertificateSha256Fingerprints" {
+		t.Fatalf("unexpected fields, got %q", values.Get("fields[androidToIosAppMappingDetails]"))
+	}
+}
+
 func TestBuildUploadCreateRequest_JSON(t *testing.T) {
 	req := BuildUploadCreateRequest{
 		Data: BuildUploadCreateData{

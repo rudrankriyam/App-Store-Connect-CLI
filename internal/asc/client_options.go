@@ -107,6 +107,9 @@ type AppInfoLocalizationsOption func(*appInfoLocalizationsQuery)
 // TerritoriesOption is a functional option for GetTerritories.
 type TerritoriesOption func(*territoriesQuery)
 
+// AndroidToIosAppMappingDetailsOption is a functional option for Android-to-iOS mappings.
+type AndroidToIosAppMappingDetailsOption func(*androidToIosAppMappingDetailsQuery)
+
 // PerfPowerMetricsOption is a functional option for performance/power metrics.
 type PerfPowerMetricsOption func(*perfPowerMetricsQuery)
 
@@ -1489,6 +1492,31 @@ func WithTerritoriesNextURL(next string) TerritoriesOption {
 // WithTerritoriesFields sets fields[territories] for territory responses.
 func WithTerritoriesFields(fields []string) TerritoriesOption {
 	return func(q *territoriesQuery) {
+		q.fields = normalizeList(fields)
+	}
+}
+
+// WithAndroidToIosAppMappingDetailsLimit sets the max number of mappings to return.
+func WithAndroidToIosAppMappingDetailsLimit(limit int) AndroidToIosAppMappingDetailsOption {
+	return func(q *androidToIosAppMappingDetailsQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithAndroidToIosAppMappingDetailsNextURL uses a next page URL directly.
+func WithAndroidToIosAppMappingDetailsNextURL(next string) AndroidToIosAppMappingDetailsOption {
+	return func(q *androidToIosAppMappingDetailsQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithAndroidToIosAppMappingDetailsFields sets fields[androidToIosAppMappingDetails].
+func WithAndroidToIosAppMappingDetailsFields(fields []string) AndroidToIosAppMappingDetailsOption {
+	return func(q *androidToIosAppMappingDetailsQuery) {
 		q.fields = normalizeList(fields)
 	}
 }

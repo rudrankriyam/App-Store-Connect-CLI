@@ -6413,3 +6413,139 @@ func TestGetDiagnosticSignatureLogs(t *testing.T) {
 		t.Fatalf("GetDiagnosticSignatureLogs() error: %v", err)
 	}
 }
+
+func TestGetAndroidToIosAppMappingDetails(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"androidToIosAppMappingDetails","id":"map-1"}],"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/apps/app-1/androidToIosAppMappingDetails" {
+			t.Fatalf("expected path /v1/apps/app-1/androidToIosAppMappingDetails, got %s", req.URL.Path)
+		}
+		query := req.URL.Query()
+		if query.Get("fields[androidToIosAppMappingDetails]") != "packageName" {
+			t.Fatalf("expected fields filter, got %q", query.Get("fields[androidToIosAppMappingDetails]"))
+		}
+		if query.Get("limit") != "20" {
+			t.Fatalf("expected limit 20, got %q", query.Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	_, err := client.GetAndroidToIosAppMappingDetails(context.Background(), "app-1",
+		WithAndroidToIosAppMappingDetailsFields([]string{"packageName"}),
+		WithAndroidToIosAppMappingDetailsLimit(20),
+	)
+	if err != nil {
+		t.Fatalf("GetAndroidToIosAppMappingDetails() error: %v", err)
+	}
+}
+
+func TestGetAndroidToIosAppMappingDetail(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"androidToIosAppMappingDetails","id":"map-1"},"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/androidToIosAppMappingDetails/map-1" {
+			t.Fatalf("expected path /v1/androidToIosAppMappingDetails/map-1, got %s", req.URL.Path)
+		}
+		query := req.URL.Query()
+		if query.Get("fields[androidToIosAppMappingDetails]") != "packageName" {
+			t.Fatalf("expected fields filter, got %q", query.Get("fields[androidToIosAppMappingDetails]"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	_, err := client.GetAndroidToIosAppMappingDetail(context.Background(), "map-1",
+		WithAndroidToIosAppMappingDetailsFields([]string{"packageName"}),
+	)
+	if err != nil {
+		t.Fatalf("GetAndroidToIosAppMappingDetail() error: %v", err)
+	}
+}
+
+func TestCreateAndroidToIosAppMappingDetail(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"androidToIosAppMappingDetails","id":"map-1"},"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/androidToIosAppMappingDetails" {
+			t.Fatalf("expected path /v1/androidToIosAppMappingDetails, got %s", req.URL.Path)
+		}
+		var payload AndroidToIosAppMappingDetailCreateRequest
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeAndroidToIosAppMappingDetails {
+			t.Fatalf("unexpected type: %s", payload.Data.Type)
+		}
+		if payload.Data.Attributes.PackageName != "com.example.android" {
+			t.Fatalf("unexpected packageName: %s", payload.Data.Attributes.PackageName)
+		}
+		if len(payload.Data.Attributes.AppSigningKeyPublicCertificateSha256Fingerprints) != 2 {
+			t.Fatalf("expected 2 fingerprints, got %d", len(payload.Data.Attributes.AppSigningKeyPublicCertificateSha256Fingerprints))
+		}
+		if payload.Data.Relationships.App == nil || payload.Data.Relationships.App.Data.ID != "app-1" {
+			t.Fatalf("unexpected app relationship: %+v", payload.Data.Relationships.App)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	_, err := client.CreateAndroidToIosAppMappingDetail(context.Background(), "app-1", AndroidToIosAppMappingDetailCreateAttributes{
+		PackageName: "com.example.android",
+		AppSigningKeyPublicCertificateSha256Fingerprints: []string{"sha1", "sha2"},
+	})
+	if err != nil {
+		t.Fatalf("CreateAndroidToIosAppMappingDetail() error: %v", err)
+	}
+}
+
+func TestUpdateAndroidToIosAppMappingDetail(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"androidToIosAppMappingDetails","id":"map-1"},"links":{"self":"https://example.com"}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/androidToIosAppMappingDetails/map-1" {
+			t.Fatalf("expected path /v1/androidToIosAppMappingDetails/map-1, got %s", req.URL.Path)
+		}
+		var payload AndroidToIosAppMappingDetailUpdateRequest
+		if err := json.NewDecoder(req.Body).Decode(&payload); err != nil {
+			t.Fatalf("failed to decode request: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeAndroidToIosAppMappingDetails || payload.Data.ID != "map-1" {
+			t.Fatalf("unexpected payload: %+v", payload.Data)
+		}
+		if payload.Data.Attributes == nil || payload.Data.Attributes.PackageName != "com.example.android.new" {
+			t.Fatalf("unexpected attributes: %+v", payload.Data.Attributes)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	_, err := client.UpdateAndroidToIosAppMappingDetail(context.Background(), "map-1", AndroidToIosAppMappingDetailUpdateAttributes{
+		PackageName: "com.example.android.new",
+	})
+	if err != nil {
+		t.Fatalf("UpdateAndroidToIosAppMappingDetail() error: %v", err)
+	}
+}
+
+func TestDeleteAndroidToIosAppMappingDetail(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/androidToIosAppMappingDetails/map-1" {
+			t.Fatalf("expected path /v1/androidToIosAppMappingDetails/map-1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteAndroidToIosAppMappingDetail(context.Background(), "map-1"); err != nil {
+		t.Fatalf("DeleteAndroidToIosAppMappingDetail() error: %v", err)
+	}
+}
