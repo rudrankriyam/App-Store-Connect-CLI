@@ -44,6 +44,7 @@ func RootCommand(version string) *ffcli.Command {
 			AppsCommand(),
 			AppSetupCommand(),
 			AppTagsCommand(),
+			MarketplaceCommand(),
 			NominationsCommand(),
 			BundleIDsCommand(),
 			CertificatesCommand(),

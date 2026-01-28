@@ -97,6 +97,10 @@ type subscriptionOfferCodeOneTimeUseCodesQuery struct {
 	listQuery
 }
 
+type marketplaceWebhooksQuery struct {
+	listQuery
+}
+
 type appStoreVersionsQuery struct {
 	listQuery
 	platforms      []string
@@ -624,6 +628,12 @@ func buildBetaRecruitmentCriterionOptionsQuery(query *betaRecruitmentCriterionOp
 }
 
 func buildSubscriptionOfferCodeOneTimeUseCodesQuery(query *subscriptionOfferCodeOneTimeUseCodesQuery) string {
+	values := url.Values{}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildMarketplaceWebhooksQuery(query *marketplaceWebhooksQuery) string {
 	values := url.Values{}
 	addLimit(values, query.limit)
 	return values.Encode()

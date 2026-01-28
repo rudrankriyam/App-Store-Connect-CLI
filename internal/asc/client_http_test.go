@@ -6413,3 +6413,239 @@ func TestGetDiagnosticSignatureLogs(t *testing.T) {
 		t.Fatalf("GetDiagnosticSignatureLogs() error: %v", err)
 	}
 }
+
+func TestGetMarketplaceSearchDetailForApp_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"marketplaceSearchDetails","id":"detail-1","attributes":{"catalogUrl":"https://example.com/catalog"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/apps/app-1/marketplaceSearchDetail" {
+			t.Fatalf("expected path /v1/apps/app-1/marketplaceSearchDetail, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetMarketplaceSearchDetailForApp(context.Background(), "app-1"); err != nil {
+		t.Fatalf("GetMarketplaceSearchDetailForApp() error: %v", err)
+	}
+}
+
+func TestCreateMarketplaceSearchDetail_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"marketplaceSearchDetails","id":"detail-1","attributes":{"catalogUrl":"https://example.com/catalog"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceSearchDetails" {
+			t.Fatalf("expected path /v1/marketplaceSearchDetails, got %s", req.URL.Path)
+		}
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatalf("read body error: %v", err)
+		}
+		var payload MarketplaceSearchDetailCreateRequest
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeMarketplaceSearchDetails {
+			t.Fatalf("expected type marketplaceSearchDetails, got %q", payload.Data.Type)
+		}
+		if payload.Data.Attributes.CatalogURL != "https://example.com/catalog" {
+			t.Fatalf("expected catalog url https://example.com/catalog, got %q", payload.Data.Attributes.CatalogURL)
+		}
+		if payload.Data.Relationships == nil || payload.Data.Relationships.App == nil {
+			t.Fatalf("expected app relationship to be set")
+		}
+		if payload.Data.Relationships.App.Data.ID != "app-1" {
+			t.Fatalf("expected app id app-1, got %q", payload.Data.Relationships.App.Data.ID)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.CreateMarketplaceSearchDetail(context.Background(), "app-1", "https://example.com/catalog"); err != nil {
+		t.Fatalf("CreateMarketplaceSearchDetail() error: %v", err)
+	}
+}
+
+func TestUpdateMarketplaceSearchDetail_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"marketplaceSearchDetails","id":"detail-1","attributes":{"catalogUrl":"https://example.com/new"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceSearchDetails/detail-1" {
+			t.Fatalf("expected path /v1/marketplaceSearchDetails/detail-1, got %s", req.URL.Path)
+		}
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatalf("read body error: %v", err)
+		}
+		var payload MarketplaceSearchDetailUpdateRequest
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeMarketplaceSearchDetails {
+			t.Fatalf("expected type marketplaceSearchDetails, got %q", payload.Data.Type)
+		}
+		if payload.Data.ID != "detail-1" {
+			t.Fatalf("expected id detail-1, got %q", payload.Data.ID)
+		}
+		if payload.Data.Attributes == nil || payload.Data.Attributes.CatalogURL == nil {
+			t.Fatalf("expected catalog url attribute to be set")
+		}
+		if *payload.Data.Attributes.CatalogURL != "https://example.com/new" {
+			t.Fatalf("expected catalog url https://example.com/new, got %q", *payload.Data.Attributes.CatalogURL)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	urlValue := "https://example.com/new"
+	if _, err := client.UpdateMarketplaceSearchDetail(context.Background(), "detail-1", MarketplaceSearchDetailUpdateAttributes{CatalogURL: &urlValue}); err != nil {
+		t.Fatalf("UpdateMarketplaceSearchDetail() error: %v", err)
+	}
+}
+
+func TestDeleteMarketplaceSearchDetail_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceSearchDetails/detail-1" {
+			t.Fatalf("expected path /v1/marketplaceSearchDetails/detail-1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteMarketplaceSearchDetail(context.Background(), "detail-1"); err != nil {
+		t.Fatalf("DeleteMarketplaceSearchDetail() error: %v", err)
+	}
+}
+
+func TestGetMarketplaceWebhooks_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"marketplaceWebhooks","id":"wh-1","attributes":{"endpointUrl":"https://example.com/webhook"}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceWebhooks" {
+			t.Fatalf("expected path /v1/marketplaceWebhooks, got %s", req.URL.Path)
+		}
+		values := req.URL.Query()
+		if values.Get("limit") != "5" {
+			t.Fatalf("expected limit=5, got %q", values.Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetMarketplaceWebhooks(context.Background(), WithMarketplaceWebhooksLimit(5)); err != nil {
+		t.Fatalf("GetMarketplaceWebhooks() error: %v", err)
+	}
+}
+
+func TestGetMarketplaceWebhook_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"marketplaceWebhooks","id":"wh-1","attributes":{"endpointUrl":"https://example.com/webhook"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceWebhooks/wh-1" {
+			t.Fatalf("expected path /v1/marketplaceWebhooks/wh-1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetMarketplaceWebhook(context.Background(), "wh-1"); err != nil {
+		t.Fatalf("GetMarketplaceWebhook() error: %v", err)
+	}
+}
+
+func TestCreateMarketplaceWebhook_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"marketplaceWebhooks","id":"wh-1","attributes":{"endpointUrl":"https://example.com/webhook"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceWebhooks" {
+			t.Fatalf("expected path /v1/marketplaceWebhooks, got %s", req.URL.Path)
+		}
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatalf("read body error: %v", err)
+		}
+		var payload MarketplaceWebhookCreateRequest
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeMarketplaceWebhooks {
+			t.Fatalf("expected type marketplaceWebhooks, got %q", payload.Data.Type)
+		}
+		if payload.Data.Attributes.EndpointURL != "https://example.com/webhook" {
+			t.Fatalf("expected endpoint url https://example.com/webhook, got %q", payload.Data.Attributes.EndpointURL)
+		}
+		if payload.Data.Attributes.Secret != "secret123" {
+			t.Fatalf("expected secret secret123, got %q", payload.Data.Attributes.Secret)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.CreateMarketplaceWebhook(context.Background(), "https://example.com/webhook", "secret123"); err != nil {
+		t.Fatalf("CreateMarketplaceWebhook() error: %v", err)
+	}
+}
+
+func TestUpdateMarketplaceWebhook_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"marketplaceWebhooks","id":"wh-1","attributes":{"endpointUrl":"https://example.com/new"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceWebhooks/wh-1" {
+			t.Fatalf("expected path /v1/marketplaceWebhooks/wh-1, got %s", req.URL.Path)
+		}
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatalf("read body error: %v", err)
+		}
+		var payload MarketplaceWebhookUpdateRequest
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeMarketplaceWebhooks {
+			t.Fatalf("expected type marketplaceWebhooks, got %q", payload.Data.Type)
+		}
+		if payload.Data.ID != "wh-1" {
+			t.Fatalf("expected id wh-1, got %q", payload.Data.ID)
+		}
+		if payload.Data.Attributes == nil || payload.Data.Attributes.EndpointURL == nil {
+			t.Fatalf("expected endpoint url attribute to be set")
+		}
+		if *payload.Data.Attributes.EndpointURL != "https://example.com/new" {
+			t.Fatalf("expected endpoint url https://example.com/new, got %q", *payload.Data.Attributes.EndpointURL)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	urlValue := "https://example.com/new"
+	if _, err := client.UpdateMarketplaceWebhook(context.Background(), "wh-1", MarketplaceWebhookUpdateAttributes{EndpointURL: &urlValue}); err != nil {
+		t.Fatalf("UpdateMarketplaceWebhook() error: %v", err)
+	}
+}
+
+func TestDeleteMarketplaceWebhook_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, "")
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/marketplaceWebhooks/wh-1" {
+			t.Fatalf("expected path /v1/marketplaceWebhooks/wh-1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteMarketplaceWebhook(context.Background(), "wh-1"); err != nil {
+		t.Fatalf("DeleteMarketplaceWebhook() error: %v", err)
+	}
+}

@@ -134,6 +134,9 @@ type AppStoreReviewAttachmentsOption func(*appStoreReviewAttachmentsQuery)
 // AppEncryptionDeclarationsOption is a functional option for encryption declarations.
 type AppEncryptionDeclarationsOption func(*appEncryptionDeclarationsQuery)
 
+// MarketplaceWebhooksOption is a functional option for marketplace webhooks.
+type MarketplaceWebhooksOption func(*marketplaceWebhooksQuery)
+
 // WithFeedbackDeviceModels filters feedback by device model(s).
 func WithFeedbackDeviceModels(models []string) FeedbackOption {
 	return func(q *feedbackQuery) {
@@ -271,6 +274,24 @@ func WithSubscriptionOfferCodeOneTimeUseCodesLimit(limit int) SubscriptionOfferC
 // WithSubscriptionOfferCodeOneTimeUseCodesNextURL uses a next page URL directly.
 func WithSubscriptionOfferCodeOneTimeUseCodesNextURL(next string) SubscriptionOfferCodeOneTimeUseCodesOption {
 	return func(q *subscriptionOfferCodeOneTimeUseCodesQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithMarketplaceWebhooksLimit sets the max number of marketplace webhooks to return.
+func WithMarketplaceWebhooksLimit(limit int) MarketplaceWebhooksOption {
+	return func(q *marketplaceWebhooksQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithMarketplaceWebhooksNextURL uses a next page URL directly.
+func WithMarketplaceWebhooksNextURL(next string) MarketplaceWebhooksOption {
+	return func(q *marketplaceWebhooksQuery) {
 		if strings.TrimSpace(next) != "" {
 			q.nextURL = strings.TrimSpace(next)
 		}

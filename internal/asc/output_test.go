@@ -2954,3 +2954,131 @@ func TestPrintTable_PerformanceDownloadResult(t *testing.T) {
 		t.Fatalf("expected file path in output, got: %s", output)
 	}
 }
+
+func TestPrintTable_MarketplaceSearchDetail(t *testing.T) {
+	resp := &MarketplaceSearchDetailResponse{
+		Data: Resource[MarketplaceSearchDetailAttributes]{
+			ID: "detail-1",
+			Attributes: MarketplaceSearchDetailAttributes{
+				CatalogURL: "https://example.com/catalog",
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Catalog URL") {
+		t.Fatalf("expected catalog url header, got: %s", output)
+	}
+	if !strings.Contains(output, "https://example.com/catalog") {
+		t.Fatalf("expected catalog url in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_MarketplaceSearchDetail(t *testing.T) {
+	resp := &MarketplaceSearchDetailResponse{
+		Data: Resource[MarketplaceSearchDetailAttributes]{
+			ID: "detail-1",
+			Attributes: MarketplaceSearchDetailAttributes{
+				CatalogURL: "https://example.com/catalog",
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| ID | Catalog URL |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "detail-1") {
+		t.Fatalf("expected search detail id in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_MarketplaceWebhooks(t *testing.T) {
+	resp := &MarketplaceWebhooksResponse{
+		Data: []Resource[MarketplaceWebhookAttributes]{
+			{
+				ID: "webhook-1",
+				Attributes: MarketplaceWebhookAttributes{
+					EndpointURL: "https://example.com/webhook",
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(resp)
+	})
+
+	if !strings.Contains(output, "Endpoint URL") {
+		t.Fatalf("expected endpoint url header, got: %s", output)
+	}
+	if !strings.Contains(output, "https://example.com/webhook") {
+		t.Fatalf("expected endpoint url in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_MarketplaceWebhooks(t *testing.T) {
+	resp := &MarketplaceWebhooksResponse{
+		Data: []Resource[MarketplaceWebhookAttributes]{
+			{
+				ID: "webhook-1",
+				Attributes: MarketplaceWebhookAttributes{
+					EndpointURL: "https://example.com/webhook",
+				},
+			},
+		},
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(resp)
+	})
+
+	if !strings.Contains(output, "| ID | Endpoint URL |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "webhook-1") {
+		t.Fatalf("expected webhook id in output, got: %s", output)
+	}
+}
+
+func TestPrintTable_MarketplaceSearchDetailDeleteResult(t *testing.T) {
+	result := &MarketplaceSearchDetailDeleteResult{
+		ID:      "detail-1",
+		Deleted: true,
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintTable(result)
+	})
+
+	if !strings.Contains(output, "Deleted") {
+		t.Fatalf("expected deleted header, got: %s", output)
+	}
+	if !strings.Contains(output, "detail-1") {
+		t.Fatalf("expected search detail id in output, got: %s", output)
+	}
+}
+
+func TestPrintMarkdown_MarketplaceWebhookDeleteResult(t *testing.T) {
+	result := &MarketplaceWebhookDeleteResult{
+		ID:      "webhook-1",
+		Deleted: true,
+	}
+
+	output := captureStdout(t, func() error {
+		return PrintMarkdown(result)
+	})
+
+	if !strings.Contains(output, "| ID | Deleted |") {
+		t.Fatalf("expected markdown header, got: %s", output)
+	}
+	if !strings.Contains(output, "webhook-1") {
+		t.Fatalf("expected webhook id in output, got: %s", output)
+	}
+}

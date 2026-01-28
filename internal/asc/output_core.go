@@ -63,6 +63,14 @@ func PrintMarkdown(data interface{}) error {
 		return printAppTagsMarkdown(v)
 	case *AppTagResponse:
 		return printAppTagsMarkdown(&AppTagsResponse{Data: []Resource[AppTagAttributes]{v.Data}})
+	case *MarketplaceSearchDetailsResponse:
+		return printMarketplaceSearchDetailsMarkdown(v)
+	case *MarketplaceSearchDetailResponse:
+		return printMarketplaceSearchDetailMarkdown(v)
+	case *MarketplaceWebhooksResponse:
+		return printMarketplaceWebhooksMarkdown(v)
+	case *MarketplaceWebhookResponse:
+		return printMarketplaceWebhookMarkdown(v)
 	case *NominationsResponse:
 		return printNominationsMarkdown(v)
 	case *NominationResponse:
@@ -329,6 +337,10 @@ func PrintMarkdown(data interface{}) error {
 		return printSandboxTesterClearHistoryResultMarkdown(v)
 	case *BundleIDDeleteResult:
 		return printBundleIDDeleteResultMarkdown(v)
+	case *MarketplaceSearchDetailDeleteResult:
+		return printMarketplaceSearchDetailDeleteResultMarkdown(v)
+	case *MarketplaceWebhookDeleteResult:
+		return printMarketplaceWebhookDeleteResultMarkdown(v)
 	case *BundleIDCapabilityDeleteResult:
 		return printBundleIDCapabilityDeleteResultMarkdown(v)
 	case *CertificateRevokeResult:
@@ -439,6 +451,14 @@ func PrintTable(data interface{}) error {
 		return printAppTagsTable(v)
 	case *AppTagResponse:
 		return printAppTagsTable(&AppTagsResponse{Data: []Resource[AppTagAttributes]{v.Data}})
+	case *MarketplaceSearchDetailsResponse:
+		return printMarketplaceSearchDetailsTable(v)
+	case *MarketplaceSearchDetailResponse:
+		return printMarketplaceSearchDetailTable(v)
+	case *MarketplaceWebhooksResponse:
+		return printMarketplaceWebhooksTable(v)
+	case *MarketplaceWebhookResponse:
+		return printMarketplaceWebhookTable(v)
 	case *NominationsResponse:
 		return printNominationsTable(v)
 	case *NominationResponse:
@@ -705,6 +725,10 @@ func PrintTable(data interface{}) error {
 		return printSandboxTesterClearHistoryResultTable(v)
 	case *BundleIDDeleteResult:
 		return printBundleIDDeleteResultTable(v)
+	case *MarketplaceSearchDetailDeleteResult:
+		return printMarketplaceSearchDetailDeleteResultTable(v)
+	case *MarketplaceWebhookDeleteResult:
+		return printMarketplaceWebhookDeleteResultTable(v)
 	case *BundleIDCapabilityDeleteResult:
 		return printBundleIDCapabilityDeleteResultTable(v)
 	case *CertificateRevokeResult:
