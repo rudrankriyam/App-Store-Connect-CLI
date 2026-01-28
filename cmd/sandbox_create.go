@@ -39,7 +39,9 @@ func SandboxCreateCommand() *ffcli.Command {
 
 Examples:
   asc sandbox create --email "tester@example.com" --first-name "Test" --last-name "User" --password "Passwordtest1" --confirm-password "Passwordtest1" --secret-question "Question" --secret-answer "Answer" --birth-date "1980-03-01" --territory "USA"
-  echo "Passwordtest1" | asc sandbox create --email "tester@example.com" --first-name "Test" --last-name "User" --password-stdin --secret-question "Question" --secret-answer "Answer" --birth-date "1980-03-01" --territory "USA"`,
+  echo "Passwordtest1" | asc sandbox create --email "tester@example.com" --first-name "Test" --last-name "User" --password-stdin --secret-question "Question" --secret-answer "Answer" --birth-date "1980-03-01" --territory "USA"
+
+Note: The OpenAPI v2 snapshot does not include a sandbox tester create endpoint. This command returns an error until the API supports v2 create.`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {

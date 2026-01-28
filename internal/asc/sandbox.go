@@ -280,28 +280,7 @@ func (c *Client) UpdateSandboxTester(ctx context.Context, testerID string, attri
 
 // CreateSandboxTester creates a sandbox tester.
 func (c *Client) CreateSandboxTester(ctx context.Context, attributes SandboxTesterCreateAttributes) (*SandboxTesterResponse, error) {
-	payload := SandboxTesterCreateRequest{
-		Data: SandboxTesterCreateData{
-			Type:       ResourceTypeSandboxTesters,
-			Attributes: attributes,
-		},
-	}
-	body, err := BuildRequestBody(payload)
-	if err != nil {
-		return nil, err
-	}
-
-	data, err := c.do(ctx, "POST", "/v1/sandboxTesters", body)
-	if err != nil {
-		return nil, err
-	}
-
-	var response SandboxTesterResponse
-	if err := json.Unmarshal(data, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse sandbox tester response: %w", err)
-	}
-
-	return &response, nil
+	return nil, fmt.Errorf("sandbox tester create is not supported by OpenAPI v2")
 }
 
 // ClearSandboxTesterPurchaseHistory clears purchase history for a sandbox tester.
@@ -338,7 +317,5 @@ func (c *Client) ClearSandboxTesterPurchaseHistory(ctx context.Context, testerID
 
 // DeleteSandboxTester deletes a sandbox tester by ID.
 func (c *Client) DeleteSandboxTester(ctx context.Context, testerID string) error {
-	path := fmt.Sprintf("/v1/sandboxTesters/%s", testerID)
-	_, err := c.do(ctx, "DELETE", path, nil)
-	return err
+	return fmt.Errorf("sandbox tester delete is not supported by OpenAPI v2")
 }

@@ -24,7 +24,9 @@ Examples:
   asc sandbox get --id "SANDBOX_TESTER_ID"
   asc sandbox update --id "SANDBOX_TESTER_ID" --territory "USA"
   asc sandbox clear-history --id "SANDBOX_TESTER_ID" --confirm
-  asc sandbox delete --email "tester@example.com" --confirm`,
+  asc sandbox delete --email "tester@example.com" --confirm
+
+Note: The OpenAPI v2 snapshot does not include sandbox tester create/delete endpoints. These commands currently return errors until the API supports v2 create/delete.`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Subcommands: []*ffcli.Command{

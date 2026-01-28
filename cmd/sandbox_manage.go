@@ -84,7 +84,9 @@ func SandboxDeleteCommand() *ffcli.Command {
 
 Examples:
   asc sandbox delete --id "SANDBOX_TESTER_ID" --confirm
-  asc sandbox delete --email "tester@example.com" --confirm`,
+  asc sandbox delete --email "tester@example.com" --confirm
+
+Note: The OpenAPI v2 snapshot does not include a sandbox tester delete endpoint. This command returns an error until the API supports v2 delete.`,
 		FlagSet:   fs,
 		UsageFunc: DefaultUsageFunc,
 		Exec: func(ctx context.Context, args []string) error {
