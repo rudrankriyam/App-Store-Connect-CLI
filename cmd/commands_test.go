@@ -1034,6 +1034,9 @@ func TestTestFlightAppsValidationErrors(t *testing.T) {
 					if errors.Is(err, flag.ErrHelp) {
 						t.Fatalf("expected non-help error, got %v", err)
 					}
+					if test.wantErr != "" && !strings.Contains(err.Error(), test.wantErr) {
+						t.Fatalf("expected error %q, got %q", test.wantErr, err)
+					}
 				}
 			})
 
