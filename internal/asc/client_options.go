@@ -65,6 +65,12 @@ type BundleIDsOption func(*bundleIDsQuery)
 // BundleIDCapabilitiesOption is a functional option for GetBundleIDCapabilities.
 type BundleIDCapabilitiesOption func(*bundleIDCapabilitiesQuery)
 
+// MerchantIDsOption is a functional option for GetMerchantIDs.
+type MerchantIDsOption func(*merchantIDsQuery)
+
+// MerchantIDCertificatesOption is a functional option for GetMerchantIDCertificates.
+type MerchantIDCertificatesOption func(*merchantIDCertificatesQuery)
+
 // CertificatesOption is a functional option for GetCertificates.
 type CertificatesOption func(*certificatesQuery)
 
@@ -1015,6 +1021,62 @@ func WithBundleIDsFilterIdentifier(identifier string) BundleIDsOption {
 		normalized := normalizeCSVString(identifier)
 		if normalized != "" {
 			q.identifier = normalized
+		}
+	}
+}
+
+// WithMerchantIDsLimit sets the max number of merchant IDs to return.
+func WithMerchantIDsLimit(limit int) MerchantIDsOption {
+	return func(q *merchantIDsQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithMerchantIDsNextURL uses a next page URL directly.
+func WithMerchantIDsNextURL(next string) MerchantIDsOption {
+	return func(q *merchantIDsQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithMerchantIDsFilterIdentifier filters merchant IDs by identifier (supports CSV).
+func WithMerchantIDsFilterIdentifier(identifier string) MerchantIDsOption {
+	return func(q *merchantIDsQuery) {
+		normalized := normalizeCSVString(identifier)
+		if normalized != "" {
+			q.identifier = normalized
+		}
+	}
+}
+
+// WithMerchantIDsFilterName filters merchant IDs by name (supports CSV).
+func WithMerchantIDsFilterName(name string) MerchantIDsOption {
+	return func(q *merchantIDsQuery) {
+		normalized := normalizeCSVString(name)
+		if normalized != "" {
+			q.name = normalized
+		}
+	}
+}
+
+// WithMerchantIDCertificatesLimit sets the max number of certificates to return.
+func WithMerchantIDCertificatesLimit(limit int) MerchantIDCertificatesOption {
+	return func(q *merchantIDCertificatesQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithMerchantIDCertificatesNextURL uses a next page URL directly.
+func WithMerchantIDCertificatesNextURL(next string) MerchantIDCertificatesOption {
+	return func(q *merchantIDCertificatesQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
 		}
 	}
 }
