@@ -4037,6 +4037,185 @@ func TestDeleteBundleID_SendsRequest(t *testing.T) {
 	}
 }
 
+func TestGetMerchantIDs_WithFilters(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"merchantIds","id":"m1","attributes":{"name":"Example","identifier":"merchant.com.example"}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/merchantIds" {
+			t.Fatalf("expected path /v1/merchantIds, got %s", req.URL.Path)
+		}
+		values := req.URL.Query()
+		if values.Get("filter[name]") != "Example" {
+			t.Fatalf("expected filter[name]=Example, got %q", values.Get("filter[name]"))
+		}
+		if values.Get("filter[identifier]") != "merchant.com.example" {
+			t.Fatalf("expected filter[identifier]=merchant.com.example, got %q", values.Get("filter[identifier]"))
+		}
+		if values.Get("limit") != "5" {
+			t.Fatalf("expected limit=5, got %q", values.Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetMerchantIDs(
+		context.Background(),
+		WithMerchantIDsFilterName("Example"),
+		WithMerchantIDsFilterIdentifier("merchant.com.example"),
+		WithMerchantIDsLimit(5),
+	); err != nil {
+		t.Fatalf("GetMerchantIDs() error: %v", err)
+	}
+}
+
+func TestGetMerchantID_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"merchantIds","id":"m1","attributes":{"name":"Example","identifier":"merchant.com.example"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/merchantIds/m1" {
+			t.Fatalf("expected path /v1/merchantIds/m1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetMerchantID(context.Background(), "m1"); err != nil {
+		t.Fatalf("GetMerchantID() error: %v", err)
+	}
+}
+
+func TestCreateMerchantID_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusCreated, `{"data":{"type":"merchantIds","id":"m1","attributes":{"name":"Example","identifier":"merchant.com.example"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPost {
+			t.Fatalf("expected POST, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/merchantIds" {
+			t.Fatalf("expected path /v1/merchantIds, got %s", req.URL.Path)
+		}
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatalf("read body error: %v", err)
+		}
+		var payload MerchantIDCreateRequest
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeMerchantIds {
+			t.Fatalf("expected type merchantIds, got %q", payload.Data.Type)
+		}
+		if payload.Data.Attributes.Identifier != "merchant.com.example" {
+			t.Fatalf("expected identifier merchant.com.example, got %q", payload.Data.Attributes.Identifier)
+		}
+		if payload.Data.Attributes.Name != "Example" {
+			t.Fatalf("expected name Example, got %q", payload.Data.Attributes.Name)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	attrs := MerchantIDCreateAttributes{
+		Name:       "Example",
+		Identifier: "merchant.com.example",
+	}
+	if _, err := client.CreateMerchantID(context.Background(), attrs); err != nil {
+		t.Fatalf("CreateMerchantID() error: %v", err)
+	}
+}
+
+func TestUpdateMerchantID_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":{"type":"merchantIds","id":"m1","attributes":{"name":"Updated","identifier":"merchant.com.example"}}}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodPatch {
+			t.Fatalf("expected PATCH, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/merchantIds/m1" {
+			t.Fatalf("expected path /v1/merchantIds/m1, got %s", req.URL.Path)
+		}
+		body, err := io.ReadAll(req.Body)
+		if err != nil {
+			t.Fatalf("read body error: %v", err)
+		}
+		var payload MerchantIDUpdateRequest
+		if err := json.Unmarshal(body, &payload); err != nil {
+			t.Fatalf("decode body error: %v", err)
+		}
+		if payload.Data.Type != ResourceTypeMerchantIds {
+			t.Fatalf("expected type merchantIds, got %q", payload.Data.Type)
+		}
+		if payload.Data.ID != "m1" {
+			t.Fatalf("expected id m1, got %q", payload.Data.ID)
+		}
+		if payload.Data.Attributes == nil || payload.Data.Attributes.Name != "Updated" {
+			t.Fatalf("expected name Updated, got %v", payload.Data.Attributes)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	attrs := MerchantIDUpdateAttributes{Name: "Updated"}
+	if _, err := client.UpdateMerchantID(context.Background(), "m1", attrs); err != nil {
+		t.Fatalf("UpdateMerchantID() error: %v", err)
+	}
+}
+
+func TestDeleteMerchantID_SendsRequest(t *testing.T) {
+	response := jsonResponse(http.StatusNoContent, ``)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodDelete {
+			t.Fatalf("expected DELETE, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/merchantIds/m1" {
+			t.Fatalf("expected path /v1/merchantIds/m1, got %s", req.URL.Path)
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if err := client.DeleteMerchantID(context.Background(), "m1"); err != nil {
+		t.Fatalf("DeleteMerchantID() error: %v", err)
+	}
+}
+
+func TestGetMerchantIDCertificates_WithLimit(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"certificates","id":"c1","attributes":{"name":"Cert","certificateType":"APPLE_PAY"}}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/merchantIds/m1/certificates" {
+			t.Fatalf("expected path /v1/merchantIds/m1/certificates, got %s", req.URL.Path)
+		}
+		if req.URL.Query().Get("limit") != "5" {
+			t.Fatalf("expected limit=5, got %q", req.URL.Query().Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetMerchantIDCertificates(context.Background(), "m1", WithMerchantIDCertificatesLimit(5)); err != nil {
+		t.Fatalf("GetMerchantIDCertificates() error: %v", err)
+	}
+}
+
+func TestGetMerchantIDCertificatesRelationships_WithLimit(t *testing.T) {
+	response := jsonResponse(http.StatusOK, `{"data":[{"type":"certificates","id":"c1"}]}`)
+	client := newTestClient(t, func(req *http.Request) {
+		if req.Method != http.MethodGet {
+			t.Fatalf("expected GET, got %s", req.Method)
+		}
+		if req.URL.Path != "/v1/merchantIds/m1/relationships/certificates" {
+			t.Fatalf("expected path /v1/merchantIds/m1/relationships/certificates, got %s", req.URL.Path)
+		}
+		if req.URL.Query().Get("limit") != "5" {
+			t.Fatalf("expected limit=5, got %q", req.URL.Query().Get("limit"))
+		}
+		assertAuthorized(t, req)
+	}, response)
+
+	if _, err := client.GetMerchantIDCertificatesRelationships(context.Background(), "m1", WithLinkagesLimit(5)); err != nil {
+		t.Fatalf("GetMerchantIDCertificatesRelationships() error: %v", err)
+	}
+}
+
 func TestGetBundleIDCapabilities_SendsRequest(t *testing.T) {
 	response := jsonResponse(http.StatusOK, `{"data":[{"type":"bundleIdCapabilities","id":"cap1","attributes":{"capabilityType":"ICLOUD"}}]}`)
 	client := newTestClient(t, func(req *http.Request) {

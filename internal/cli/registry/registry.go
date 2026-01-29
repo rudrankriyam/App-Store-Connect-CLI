@@ -29,6 +29,7 @@ import (
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/iap"
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/install"
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/localizations"
+	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/merchantids"
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/migrate"
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/nominations"
 	"github.com/rudrankriyam/App-Store-Connect-CLI/internal/cli/offercodes"
@@ -82,6 +83,7 @@ func Subcommands(version string) []*ffcli.Command {
 		apps.AppTagsCommand(),
 		nominations.NominationsCommand(),
 		bundleids.BundleIDsCommand(),
+		merchantids.MerchantIDsCommand(),
 		certificates.CertificatesCommand(),
 		profiles.ProfilesCommand(),
 		offercodes.OfferCodesCommand(),
