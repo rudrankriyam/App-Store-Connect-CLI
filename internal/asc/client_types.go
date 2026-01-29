@@ -10,6 +10,7 @@ const (
 	ResourceTypeAppTags                               ResourceType = "appTags"
 	ResourceTypeBundleIds                             ResourceType = "bundleIds"
 	ResourceTypeBundleIdCapabilities                  ResourceType = "bundleIdCapabilities"
+	ResourceTypePassTypeIds                           ResourceType = "passTypeIds"
 	ResourceTypeAppCategories                         ResourceType = "appCategories"
 	ResourceTypeAppAvailabilities                     ResourceType = "appAvailabilities"
 	ResourceTypeAppPricePoints                        ResourceType = "appPricePoints"
