@@ -65,6 +65,12 @@ type BundleIDsOption func(*bundleIDsQuery)
 // BundleIDCapabilitiesOption is a functional option for GetBundleIDCapabilities.
 type BundleIDCapabilitiesOption func(*bundleIDCapabilitiesQuery)
 
+// PassTypeIDsOption is a functional option for GetPassTypeIDs.
+type PassTypeIDsOption func(*passTypeIDsQuery)
+
+// PassTypeIDCertificatesOption is a functional option for GetPassTypeIDCertificates.
+type PassTypeIDCertificatesOption func(*passTypeIDCertificatesQuery)
+
 // CertificatesOption is a functional option for GetCertificates.
 type CertificatesOption func(*certificatesQuery)
 
@@ -1015,6 +1021,62 @@ func WithBundleIDsFilterIdentifier(identifier string) BundleIDsOption {
 		normalized := normalizeCSVString(identifier)
 		if normalized != "" {
 			q.identifier = normalized
+		}
+	}
+}
+
+// WithPassTypeIDsLimit sets the max number of pass type IDs to return.
+func WithPassTypeIDsLimit(limit int) PassTypeIDsOption {
+	return func(q *passTypeIDsQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithPassTypeIDsNextURL uses a next page URL directly.
+func WithPassTypeIDsNextURL(next string) PassTypeIDsOption {
+	return func(q *passTypeIDsQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
+		}
+	}
+}
+
+// WithPassTypeIDsFilterIdentifier filters pass type IDs by identifier (supports CSV).
+func WithPassTypeIDsFilterIdentifier(identifier string) PassTypeIDsOption {
+	return func(q *passTypeIDsQuery) {
+		normalized := normalizeCSVString(identifier)
+		if normalized != "" {
+			q.identifier = normalized
+		}
+	}
+}
+
+// WithPassTypeIDsFilterName filters pass type IDs by name (supports CSV).
+func WithPassTypeIDsFilterName(name string) PassTypeIDsOption {
+	return func(q *passTypeIDsQuery) {
+		normalized := normalizeCSVString(name)
+		if normalized != "" {
+			q.name = normalized
+		}
+	}
+}
+
+// WithPassTypeIDCertificatesLimit sets the max number of certificates to return.
+func WithPassTypeIDCertificatesLimit(limit int) PassTypeIDCertificatesOption {
+	return func(q *passTypeIDCertificatesQuery) {
+		if limit > 0 {
+			q.limit = limit
+		}
+	}
+}
+
+// WithPassTypeIDCertificatesNextURL uses a next page URL directly.
+func WithPassTypeIDCertificatesNextURL(next string) PassTypeIDCertificatesOption {
+	return func(q *passTypeIDCertificatesQuery) {
+		if strings.TrimSpace(next) != "" {
+			q.nextURL = strings.TrimSpace(next)
 		}
 	}
 }

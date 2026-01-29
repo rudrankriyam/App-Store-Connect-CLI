@@ -73,6 +73,10 @@ func PrintMarkdown(data interface{}) error {
 		return printBundleIDsMarkdown(v)
 	case *BundleIDResponse:
 		return printBundleIDsMarkdown(&BundleIDsResponse{Data: []Resource[BundleIDAttributes]{v.Data}})
+	case *PassTypeIDsResponse:
+		return printPassTypeIDsMarkdown(v)
+	case *PassTypeIDResponse:
+		return printPassTypeIDsMarkdown(&PassTypeIDsResponse{Data: []Resource[PassTypeIDAttributes]{v.Data}})
 	case *CertificatesResponse:
 		return printCertificatesMarkdown(v)
 	case *CertificateResponse:
@@ -393,6 +397,8 @@ func PrintMarkdown(data interface{}) error {
 		return printSandboxTesterClearHistoryResultMarkdown(v)
 	case *BundleIDDeleteResult:
 		return printBundleIDDeleteResultMarkdown(v)
+	case *PassTypeIDDeleteResult:
+		return printPassTypeIDDeleteResultMarkdown(v)
 	case *BundleIDCapabilityDeleteResult:
 		return printBundleIDCapabilityDeleteResultMarkdown(v)
 	case *CertificateRevokeResult:
@@ -513,6 +519,10 @@ func PrintTable(data interface{}) error {
 		return printBundleIDsTable(v)
 	case *BundleIDResponse:
 		return printBundleIDsTable(&BundleIDsResponse{Data: []Resource[BundleIDAttributes]{v.Data}})
+	case *PassTypeIDsResponse:
+		return printPassTypeIDsTable(v)
+	case *PassTypeIDResponse:
+		return printPassTypeIDsTable(&PassTypeIDsResponse{Data: []Resource[PassTypeIDAttributes]{v.Data}})
 	case *CertificatesResponse:
 		return printCertificatesTable(v)
 	case *CertificateResponse:
@@ -833,6 +843,8 @@ func PrintTable(data interface{}) error {
 		return printSandboxTesterClearHistoryResultTable(v)
 	case *BundleIDDeleteResult:
 		return printBundleIDDeleteResultTable(v)
+	case *PassTypeIDDeleteResult:
+		return printPassTypeIDDeleteResultTable(v)
 	case *BundleIDCapabilityDeleteResult:
 		return printBundleIDCapabilityDeleteResultTable(v)
 	case *CertificateRevokeResult:

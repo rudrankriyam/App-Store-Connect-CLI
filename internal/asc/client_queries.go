@@ -163,6 +163,16 @@ type bundleIDCapabilitiesQuery struct {
 	listQuery
 }
 
+type passTypeIDsQuery struct {
+	listQuery
+	identifier string
+	name       string
+}
+
+type passTypeIDCertificatesQuery struct {
+	listQuery
+}
+
 type certificatesQuery struct {
 	listQuery
 	certificateTypes []string
@@ -452,6 +462,18 @@ func buildBundleIDsQuery(query *bundleIDsQuery) string {
 	return values.Encode()
 }
 
+func buildPassTypeIDsQuery(query *passTypeIDsQuery) string {
+	values := url.Values{}
+	if strings.TrimSpace(query.identifier) != "" {
+		values.Set("filter[identifier]", strings.TrimSpace(query.identifier))
+	}
+	if strings.TrimSpace(query.name) != "" {
+		values.Set("filter[name]", strings.TrimSpace(query.name))
+	}
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
 func buildBundleIDCapabilitiesQuery(_ *bundleIDCapabilitiesQuery) string {
 	// Bundle ID capabilities endpoint does not support limit/pagination params.
 	return ""
@@ -460,6 +482,12 @@ func buildBundleIDCapabilitiesQuery(_ *bundleIDCapabilitiesQuery) string {
 func buildCertificatesQuery(query *certificatesQuery) string {
 	values := url.Values{}
 	addCSV(values, "filter[certificateType]", query.certificateTypes)
+	addLimit(values, query.limit)
+	return values.Encode()
+}
+
+func buildPassTypeIDCertificatesQuery(query *passTypeIDCertificatesQuery) string {
+	values := url.Values{}
 	addLimit(values, query.limit)
 	return values.Encode()
 }
